@@ -1,0 +1,32 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+
+
+const { default: mongoose } = require('mongoose');
+const app = express();
+
+const user = require('./routes/user.js');
+const admin = require('./routes/admin.js');
+
+require('dotenv').config();
+// //const multer = require("multer")
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+
+mongoose.connect("mongodb+srv://sapna20:Sapnadha20@cluster0.crepr.mongodb.net/Project-socialMedia-db?retryWrites=true&w=majority", {
+   useNewUrlParser: true
+})
+.then( () => console.log("MongoDb is connected"))
+.catch ( err => console.log(err) )
+
+////app.use('/', route);
+
+app.use('/user', user);
+app.use('/admin', admin);
+
+
+app.listen(process.env.PORT || 3000, function () {
+    console.log('Express app running on port ' + (process.env.PORT || 3000))
+});

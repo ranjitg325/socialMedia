@@ -1,0 +1,30 @@
+{
+  "name": "socialmediacreate",
+  "version": "1.0.0",
+  "description": "social media backend",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ranjitg325/socialMedia.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ranjitg325/socialMedia/issues"
+  },
+  "homepage": "https://github.com/ranjitg325/socialMedia#readme",
+  "dependencies": {
+    "bcrypt": "^5.0.1",
+    "body-parser": "^1.20.0",
+    "dotenv": "^16.0.2",
+    "express": "^4.18.1",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^6.6.2",
+    "nodemailer": "^6.8.0",
+    "otp-generator": "^4.0.0",
+    "validator": "^13.7.0"
+  }
+}
