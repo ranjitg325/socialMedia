@@ -7,6 +7,8 @@ const app = express();
 
 const user = require('./routes/user.js');
 const admin = require('./routes/admin.js');
+const post = require('./routes/post.js');
+const comment = require('./routes/comment.js');
 
 require('dotenv').config();
 // //const multer = require("multer")
@@ -25,6 +27,8 @@ mongoose.connect("mongodb+srv://sapna20:Sapnadha20@cluster0.crepr.mongodb.net/Pr
 
 app.use('/user', user);
 app.use('/admin', admin);
+app.use('/post', post);
+app.use('/comment', comment);
 
 
 app.listen(process.env.PORT || 3000, function () {

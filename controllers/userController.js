@@ -126,7 +126,7 @@ exports.login = async (req, res) => {
 
 exports.logout = async (req, res) => {
     try {
-        res.redirect("/login");
+        res.redirect("/user/login");
     } catch (err) {
         return res.status(500).send(err.message);
     }
@@ -300,39 +300,39 @@ exports.unfollow= async (req, res) => {
     }
 }
 
-  exports.suggestionsUser= async (req, res) => {
-    try {
+//   exports.suggestionsUser= async (req, res) => {
+//     try {
         
-      const newArr = [...req.user.following, req.body.id];
+//       const newArr = [...req.user.following, req.body.id];
 
-      const num = req.query.num || 10;
+//       const num = req.query.num || 10;
 
-      const users = await userModel.aggregate([
-        { $match: { _id: { $nin: newArr } } },
-        { $sample: { size: Number(num) } },
-        {
-          $lookup: {
-            from: "users",
-            localField: "followers",
-            foreignField: "_id",
-            as: "followers",
-          },
-        },
-        {
-          $lookup: {
-            from: "users",
-            localField: "following",
-            foreignField: "_id",
-            as: "following",
-          },
-        },
-      ]).project("-password");
+//       const users = await userModel.aggregate([
+//         { $match: { _id: { $nin: newArr } } },
+//         { $sample: { size: Number(num) } },
+//         {
+//           $lookup: {
+//             from: "users",
+//             localField: "followers",
+//             foreignField: "_id",
+//             as: "followers",
+//           },
+//         },
+//         {
+//           $lookup: {
+//             from: "users",
+//             localField: "following",
+//             foreignField: "_id",
+//             as: "following",
+//           },
+//         },
+//       ]).project("-password");
 
-      return res.json({
-        users,
-        result: users.length,
-      });
-    } catch (err) {
-      return res.status(500).json({ msg: err.message });
-    }
-  }
+//       return res.json({
+//         users,
+//         result: users.length,
+//       });
+//     } catch (err) {
+//       return res.status(500).json({ msg: err.message });
+//     }
+//   }

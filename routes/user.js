@@ -18,6 +18,6 @@ router.get('/searchByUsername',userController.searchByUsername);
 router.get('/getByUsername',userController.getByUsername);
 router.patch('/:id/follow',userController.follow);
 router.patch('/:id/unfollow',userController.unfollow);
-router.get('/suggestionsUser',userController.suggestionsUser);
+//router.get('/suggestionsUser',userController.suggestionsUser);
 
 module.exports = router;
