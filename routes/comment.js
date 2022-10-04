@@ -6,11 +6,11 @@ const commentController = require("../controllers/commentController");
 
 router.post("/comment", commentController.createComment);
 
-router.patch("/comment/:id", commentController.updateComment);
+router.put("/comment/:id", commentController.updateComment);
 
-router.patch("/comment/:id/like", commentController.likeComment);
+router.patch("/likeComment/:id", commentController.likeComment);
 
-router.patch("/comment/:id/unlike", commentController.unLikeComment);
+router.put("/unlikeComment/:id", commentController.unLikeComment);
 
 router.delete("/comment/:id", commentController.deleteComment);
 

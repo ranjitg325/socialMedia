@@ -4,29 +4,26 @@ const router = express.Router();
 const postController = require("../controllers/postController");
 //const auth = require("../middleware/authenticateUser");
 
-router
-  .route("/posts")
-  .post(/*auth,*/ postController.createPost)
-  .get(/*auth,*/ postController.getPosts);
+router.post("/posts", postController.createPost);
+router.get("/getMyPosts", postController.getPostsOfOwn);
 
-router
-  .route("/post/:id")
-  .patch(/*auth,*/ postController.updatePost)
-  .get(/*auth,*/ postController.getPost)
-  .delete(/*auth,*/ postController.deletePost);
+router.put("/updatePost", postController.updatePost);
+//router.put("/getPost", postController.getPost);
+router.delete("/deletePost/:id", postController.deletePost);
 
-router.patch("/post/:id/like", postController.likePost);
 
-router.patch("/post/:id/unlike", postController.unLikePost);
+router.patch("/likePost/:id", postController.likePost);
 
-router.get("/user_posts/:id",  postController.getUserPosts);
+router.patch("/unlikepost/:id", postController.unLikePost);
 
-router.get("/post_discover",  postController.getPostsDicover);
+router.get("/user_posts/:id", postController.getUserPosts);
 
-router.patch("/savePost/:id",  postController.savePost);
+//router.get("/post_discover", postController.getPostsDicover);
 
-router.patch("/unSavePost/:id",  postController.unSavePost);
+router.put("/savePost/:id", postController.savePost);
 
-router.get("/getSavePosts", postController.getSavePosts);
+router.put("/unSavePost/:id", postController.unSavePost);
+
+router.get("/getSavePosts", postController.getSavePost);
 
 module.exports = router;
