@@ -1,6 +1,8 @@
 const adminModel = require("../models/adminModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const postModel = require("../models/postModel");
+const userModel = require("../models/userModel");
 
 
 exports.admin_signup = async (req, res) => {
@@ -105,4 +107,13 @@ exports.deleteAdmin = async (req, res) => {
     } catch (err) {
         return res.status(500).send(err.message);
     }
+}
+
+exports.getReportedPosts = async (req, res) => {
+    try {
+        const reportedPosts = await postModel.find({ isReported: true });
+        return res.status(200).send({ setting: { success: "1", message: "reported posts", data: reportedPosts } });
+    } catch (err) {
+        return res.status(500).send(err.message);
+    };
 }

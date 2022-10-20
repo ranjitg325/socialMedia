@@ -1,9 +1,11 @@
 const userModel = require("../models/userModel.js")
+const postModel = require("../models/postModel.js");
 const emailValidator = require('validator')
 const transporter = require("../utils/sendMail");
 const otpGenerator = require("otp-generator");
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken")
+const jwt = require("jsonwebtoken");
+const { count } = require("../models/userModel.js");
 
 exports.user_signup = async (req, res) => {
     try {
@@ -103,11 +105,11 @@ exports.login = async (req, res) => {
         const dataExist = await userModel.findOne({ email: userEmail }).populate(
             "followers following",
             "avatar username fullname followers following"
-        );
+        ).select("-password");
 
         if (!dataExist)
             return res.status(404).send({ message: "user dose not exist" });
-        const { _id, firstName, lastName } = dataExist;
+        const { _id, fullname } = dataExist;
         const validOtp = await bcrypt.compare(userOtp, dataExist.mail_otp);
         if (!validOtp) return res.status(400).send({ message: "Invalid OTP" });
         const payload = { userId: _id, email: userEmail };
@@ -116,21 +118,87 @@ exports.login = async (req, res) => {
         return res
             .status(200)
             .send({
-                message: `${firstName} ${lastName} you are logged in Successfully`,
+                message: `${fullname} you are logged in Successfully`,
                 Token: generatedToken,
+                userDetails: dataExist
             });
     } catch (err) {
         return res.status(500).send(err.message);
     }
 };
 
-exports.logout = async (req, res) => {
+exports.logout = async (req, res) => {    //not working test again later
     try {
         res.redirect("/user/login");
     } catch (err) {
         return res.status(500).send(err.message);
     }
 }
+
+// Forgot password api for sub admin verification by email otp
+exports.forgotPassword = async (req, res) => {
+    try {
+      const { email } = req.body;
+      const customerData = await userModel.findOne({ email: email });
+      if (!customerData) {
+        return res.status(400).send({ message: "email is not valid" });
+      }
+      const otp = Math.floor(100000 + Math.random() * 900000);
+      const mailOptions = {
+        from: process.env.AUTH_EMAIL,
+        to: email,
+        subject: "Forgot Password",
+        html: `<h1>OTP for forgot password is ${otp}</h1>`,
+      };
+      transporter.sendMail(mailOptions, function (error, info) {
+        if (error) {
+          console.log(error);
+        } else {
+          console.log("Email sent: " + info);
+        }
+      });
+      await userModel.findOneAndUpdate(
+        { email: email },
+        { otp: otp, otpTime: Date.now() }
+      );
+      return res.status(200).send({ message: "OTP sent to your email", email });
+    } catch (err) {
+      return res.status(500).send(err.message);
+    }
+  };
+  // Update password and encrypt it before saving it. if otp is correct and otp is not expired then only update password
+  exports.updatePassword = async (req, res) => {
+    try {
+      const { email, otp, password } = req.body;
+      const customerData = await userModel.findOne({ email: email });
+      if (!customerData) {
+        return res.status(400).send({ message: "email is not valid" });
+      }
+      if(!otp){
+        return res.status(400).send({ message: "otp is required" });
+        }
+      if (customerData.otp == otp) {
+        if (Date.now() - customerData.otpTime > 300000) {
+          return res.status(400).send({ message: "OTP expired" });
+        }
+        const salt = await bcrypt.genSalt(10);
+        const newPassword = await bcrypt.hash(password, salt);
+        await userModel.findOneAndUpdate(
+          { email: email },
+          { password: newPassword }
+        );
+        return res
+          .status(200)
+          .send({ message: "Password updated successfully" });
+      } 
+      else {
+        return res.status(400).send({ message: "OTP is not correct" });
+      }
+    } catch (err) {
+      return res.status(500).send(err.message);
+    }
+  };
+
 
 exports.userUpdate = async (req, res) => {
     try {
@@ -300,39 +368,186 @@ exports.unfollow= async (req, res) => {
     }
 }
 
-//   exports.suggestionsUser= async (req, res) => {
-//     try {
+  exports.suggestionsUser= async (req, res) => {
+    try {
         
-//       const newArr = [...req.user.following, req.body.id];
+      const newArr = [...req.body.following, req.body._id]; //body.following means the any one following userid that follows the main user, body.id = main user id
 
-//       const num = req.query.num || 10;
+      const num = req.query.num || 10;
 
-//       const users = await userModel.aggregate([
-//         { $match: { _id: { $nin: newArr } } },
-//         { $sample: { size: Number(num) } },
-//         {
-//           $lookup: {
-//             from: "users",
-//             localField: "followers",
-//             foreignField: "_id",
-//             as: "followers",
-//           },
-//         },
-//         {
-//           $lookup: {
-//             from: "users",
-//             localField: "following",
-//             foreignField: "_id",
-//             as: "following",
-//           },
-//         },
-//       ]).project("-password");
+      const users = await userModel.aggregate([
+        { $match: { _id: { $nin: newArr } } },
+        { $sample: { size: Number(num) } },
+        {
+          $lookup: {
+            from: "users",
+            localField: "followers",
+            foreignField: "_id",
+            as: "followers",
+          },
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "following",
+            foreignField: "_id",
+            as: "following",
+          },
+        },
+      ]).project("-password -saved");
 
-//       return res.json({
-//         users,
-//         result: users.length,
-//       });
+      return res.json({
+        result: users.length,
+        users
+      });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  }
+
+
+
+exports.getFollowers = async (req, res) => {
+    try {
+        const userId = req.body.id;
+        const user = await userModel.findById(userId).populate("followers following", "-password").select("-password");
+        return res.status(200).send({ message: "follower details", data: user });
+    } catch (err) {
+        return res.status(500).json({ msg: err.message });
+    }
+}
+
+exports.getFollowing = async (req, res) => {
+    try {
+        const userId = req.body.id;
+        const user = await userModel.findById(userId).populate("following", "-password").select("-password");
+        return res.status(200).send({ message: "user details", data: user });
+    } catch (err) {
+        return res.status(500).json({ msg: err.message });
+    }
+}
+
+exports.getFollowersCount = async (req, res) => {
+    try {
+        const userId = req.body.id;
+        const user = await userModel.findById(userId).select("followers");
+        return res.status(200).send({ message: "followers count", count: user.followers.length });
+    } catch (err) {
+        return res.status(500).json({ msg: err.message });
+    }
+}
+
+exports.getFollowingCount = async (req, res) => {
+    try {
+        const userId = req.body.id;
+        const user = await userModel.findById(userId).select("following");
+        return res.status(200).send({ message: "following count", count: user.following.length });
+    } catch (err) {
+        return res.status(500).json({ msg: err.message });
+    }
+}
+
+// exports.sharePost = async (req, res) => {             //not working
+//     try {
+//         const userId = req.body.id;
+//         const postId = req.params.id;
+//         const user = await userModel.findById(userId);
+//         if (!user) return res.status(400).send({ msg: "User does not exist." });
+//         const post = await postModel.findById(postId);
+//         if (!post) return res.status(400).send({ msg: "Post does not exist." });
+//         const newPost = new postModel({
+//             userId: userId,
+//             desc: post.desc,
+//             img: post.img,
+//             likes: [],
+//             comments: [],
+//             shares: [],
+//             //shareId: postId,
+//         });
+//         await newPost.save();
+//         return res.status(200).send({ message: "post shared", data: newPost });
 //     } catch (err) {
-//       return res.status(500).json({ msg: err.message });
+//         return res.status(500).json({ msg: err.message });
 //     }
-//   }
+// }
+
+exports.blockUser = async (req, res) => {
+    try {
+        const userId = req.body.id;
+        const blockId = req.params.id;
+       // const user = await userModel.findById(userId);
+         const user = await userModel.find({_id: userId,block: blockId});
+        if (user.length > 0)
+            return res.status(500).json({ msg: "You already blocked this user." });
+        if (!user) return res.status(400).send({ msg: "User does not exist." });
+        const block = await userModel.findById(blockId);
+        if (!block) return res.status(400).send({ msg: "User does not exist." });
+        await userModel.findOneAndUpdate(
+            { _id: userId },
+            {
+                $push: { block: blockId},
+            },
+            { new: true }
+        );
+        return res.status(200).send({ message: "user blocked" });
+    } catch (err) {
+        return res.status(500).json({ msg: err.message });
+    }
+}
+
+exports.unblockUser = async (req, res) => {
+    try {
+        const userId = req.body.id;
+        const blockId = req.params.id;
+        const user = await userModel.findById(userId);
+        if (!user) return res.status(400).send({ msg: "User does not exist." });
+        const block = await userModel.findById(blockId);
+        if (!block) return res.status(400).send({ msg: "User does not exist." });
+        await userModel.findOneAndUpdate(
+            { _id: userId },
+            {
+                $pull: { block: blockId},
+            },
+            { new: true }
+        );
+        return res.status(200).send({ message: "user unblocked" });
+    } catch (err) {
+        return res.status(500).json({ msg: err.message });
+    }
+}
+//yha se
+exports.getBlockedUsers = async (req, res) => {
+    try {
+        const userId = req.body.id;
+        const user = await userModel.findById(userId).populate("block", "-password").select("-password");
+        if(user.block.length == 0)
+        return res.status(400).send({ msg: "No blocked users." });
+        return res.status(200).send({ message: "user details", data: user });
+    } catch (err) {
+        return res.status(500).json({ msg: err.message });
+    }
+}
+
+exports.getBlockedUsersCount = async (req, res) => {
+    try {
+        const userId = req.body.id;
+        const user = await userModel.findById(userId).select("block");
+        return res.status(200).send({ message: "blocks count", count: user.block.length });
+    } catch (err) {
+        return res.status(500).json({ msg: err.message });
+    }
+}
+
+//create an api where i can see posts of whom i am following only with their userNames
+
+
+// exports.getTimeline = async (req, res) => {
+//     try {
+//         const userId = req.body.id;
+//         const user = await userModel.findById(userId);
+//         const posts = await postModel.find({ userId: { $in: user.following } }).populate("userId", "-password").sort("-createdAt");
+//         return res.status(200).send({ message: "timeline posts", data: posts });
+//     } catch (err) {
+//         return res.status(500).json({ msg: err.message });
+//     }
+// }

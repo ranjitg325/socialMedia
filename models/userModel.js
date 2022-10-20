@@ -24,6 +24,14 @@ const userSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        mail_otp:{         //when a user login after registration, he will be asked to verify his email address
+            type:String,
+            unique:true,
+          },
+        otp:{              //when user forgot his password, he will be asked to verify his email address using otp
+            type:String,
+            unique:true,
+        },
         avatar: {
             type: String,
             default:
@@ -46,6 +54,8 @@ const userSchema = new mongoose.Schema(
         followers: [{ type: mongoose.Types.ObjectId, ref: "user" }],
         following: [{ type: mongoose.Types.ObjectId, ref: "user" }],
         saved: [{ type: mongoose.Types.ObjectId, ref: "user" }],
+        shared : [{ type: mongoose.Types.ObjectId, ref: "post" }],
+        block : [{ type: mongoose.Types.ObjectId, ref: "user" }],
         isDeleted: {
             type: Boolean,
             default: false,

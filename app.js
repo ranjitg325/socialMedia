@@ -9,6 +9,8 @@ const user = require('./routes/user.js');
 const admin = require('./routes/admin.js');
 const post = require('./routes/post.js');
 const comment = require('./routes/comment.js');
+const message = require('./routes/message.js');
+const notification = require('./routes/notification.js');
 
 require('dotenv').config();
 // //const multer = require("multer")
@@ -29,6 +31,8 @@ app.use('/user', user);
 app.use('/admin', admin);
 app.use('/post', post);
 app.use('/comment', comment);
+app.use('/message', message);
+app.use('/notification', notification);
 
 
 app.listen(process.env.PORT || 3000, function () {

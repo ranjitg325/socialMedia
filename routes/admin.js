@@ -16,5 +16,6 @@ router.delete('/deleteAdmin',/*middleware.authenticateToken,*/adminController.de
 
  router.get('/getAllUser',userController.getAllUser);  //done by admin only
  router.get('/getUserById',userController.getUserById); //done by admin only
+ router.get('/getReportedUser',adminController.getReportedPosts); //done by admin only
 
 module.exports=router;

@@ -121,7 +121,7 @@ exports.createPost= async (req, res) => {
     } catch (err) {
       return res.status(500).json({ msg: err.message });
     }
-  },
+  }
   exports.unLikePost= async (req, res) => {
     try {
       const like = await Posts.findOneAndUpdate(
@@ -139,7 +139,53 @@ exports.createPost= async (req, res) => {
     } catch (err) {
       return res.status(500).json({ msg: err.message });
     }
-  },
+  }
+
+  exports.supportPost= async (req, res) => {
+    try {
+      const post = await Posts.find({
+        _id: req.params.id,  //post id
+        support: req.body._id,
+      });
+      if (post.length > 0)
+        return res.status(400).json({ msg: "You already supported this post." });
+
+      const support = await Posts.findOneAndUpdate(
+        { _id: req.params.id },  //post id
+        {
+          $push: { support: req.body._id },  //user id
+        },
+        { new: true }
+      );
+
+      if (!support)
+        return res.status(400).json({ msg: "This post does not exist." });
+
+      res.status(200).send({ msg: "supported Post!" , data: support});
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  }
+
+  exports.unSupportPost= async (req, res) => {
+    try {
+      const support = await Posts.findOneAndUpdate(
+        { _id: req.params.id },
+        {
+          $pull: { support: req.body._id },
+        },
+        { new: true }
+      );
+
+      if (!support)
+        return res.status(400).json({ msg: "This post does not exist." });
+
+      res.status(200).send({ msg: "UnLiked Post!" , data :support});
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  }
+
   exports.getUserPosts= async (req, res) => {
     try {
       const features = new APIfeatures(
@@ -155,10 +201,18 @@ exports.createPost= async (req, res) => {
     } catch (err) {
       return res.status(500).json({ msg: err.message });
     }
-  },
-  // exports.getPost= async (req, res) => {
+  }
+  // exports.newsFeed= async (req, res) => {
   //   try {
-  //     const post = await Posts.findById(req.params.id)
+  //     const features = new APIfeatures(
+  //       Posts.find({
+  //         user: [ req.body.user, ...req.body.following ],
+  //       }),
+  //       req.query
+  //     ).paginating();
+
+  //     const posts = await features.query
+  //       .sort("-createdAt")
   //       .populate("user likes", "avatar username fullname followers")
   //       .populate({
   //         path: "comments",
@@ -168,28 +222,7 @@ exports.createPost= async (req, res) => {
   //         },
   //       });
 
-  //     if (!post)
-  //       return res.status(400).json({ msg: "This post does not exist." });
-
   //     res.json({
-  //       post,
-  //     });
-  //   } catch (err) {
-  //     return res.status(500).json({ msg: err.message });
-  //   }
-  // },
-  // exports.getPostsDicover= async (req, res) => {
-  //   try {
-  //     const newArr = [...req.user.following, req.user._id];
-
-  //     const num = req.query.num || 9;
-
-  //     const posts = await Posts.aggregate([
-  //       { $match: { user: { $nin: newArr } } },
-  //       { $sample: { size: Number(num) } },
-  //     ]);
-
-  //     return res.json({
   //       msg: "Success!",
   //       result: posts.length,
   //       posts,
@@ -197,7 +230,7 @@ exports.createPost= async (req, res) => {
   //   } catch (err) {
   //     return res.status(500).json({ msg: err.message });
   //   }
-  // },
+  // }
   exports.deletePost= async (req, res) => {
     try {
       const post = await Posts.findOneAndDelete({
@@ -295,3 +328,45 @@ exports.createPost= async (req, res) => {
     }
   }
 
+exports.reportPost= async (req, res) => {
+    try {
+      const post = await Posts.findOne({
+        _id: req.params.id,
+      });
+      if (!post)
+        return res.status(400).json({ msg: "This post does not exist." });
+      const report = await Posts.findOneAndUpdate(
+        { _id: req.params.id },
+        { $push: { report: req.body.id }, $set : {isReported : true} },
+        { new: true }
+      );
+
+      if (!report)
+        return res.status(400).json({ msg: "This post does not exist." });
+
+      res.status(200).send({ msg: "Reported Post", data : report });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  }
+
+  exports.unReportPost= async (req, res) => {
+    try {
+      const report = await Posts.findOneAndUpdate(
+        { _id: req.params.id },
+        {
+          $pull: { report: req.body.id }, $set : {isReported : false},
+        },
+        { new: true }
+      );
+
+      if (!report)
+        return res.status(400).json({ msg: "This post does not exist." });
+
+      res.status(200).send({ msg: "Post UnReported", data : report });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  }
+
+ 

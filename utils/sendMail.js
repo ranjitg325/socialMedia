@@ -1,5 +1,5 @@
 const nodemailer = require("nodemailer");
-
+require('dotenv').config();
 
 async function myCustomMethod(ctx){
     console.log(ctx.auth.credentials.user,ctx.auth.credentials.pass);
@@ -23,8 +23,10 @@ let transporter = nodemailer.createTransport({
     auth: {
         type: 'custom',
         method: 'MY-CUSTOM-METHOD', // forces Nodemailer to use your custom handler
-        user: process.env.AUTH_EMAIL,
-        pass: process.env.AUTH_PASS
+        // user: process.env.AUTH_EMAIL,  //if write this credential in .env file then it will not work
+        // pass: process.env.AUTH_PASS   //if write this credential in .env file then it will not work
+        user: "ranjitg325@gmail.com",    //change this later becoz it is not secure here
+        pass: "amxaataaggzhrlth"         ////change this later becoz it is not secure here
     },
     customAuth: {
         'MY-CUSTOM-METHOD': myCustomMethod
