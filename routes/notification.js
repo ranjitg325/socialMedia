@@ -1,6 +1,7 @@
 const router = require("express").Router();
 
 const notificationController = require("../controllers/notificationController");
+//const middleware = require("../middleware/authenticateUser");
 
 router.post("/notify",  notificationController.createNotify);
 
@@ -10,6 +11,5 @@ router.get("/getNotifies",  notificationController.getNotifies);
 
 router.patch("/isReadNotify",  notificationController.isReadNotify);
 
-router.delete("/deleteAllNotify", notificationController.deleteAllNotifies);
-
+router.delete("/deleteAllNotify",  notificationController.deleteAllNotifies);
 module.exports = router;

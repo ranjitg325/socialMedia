@@ -1,20 +1,95 @@
 const userModel = require("../models/userModel.js")
 const postModel = require("../models/postModel.js");
-const emailValidator = require('validator')
+const emailValidator = require("validator")
 const transporter = require("../utils/sendMail");
 const otpGenerator = require("otp-generator");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { count } = require("../models/userModel.js");
+const aws = require('../aws/aws')
+const middleware = require("../middleware/authenticateUser");
+//const aws = require('../awsBucket')
 
-exports.user_signup = async (req, res) => {
+
+// exports.user_signup = async function (req, res) {
+//     try {
+//         let {
+//             fullname,
+//             username,
+//             //email,
+//             password,
+//             //avatar,
+//             gender,
+//             phoneNumber,
+//             address,
+//             story,
+//             followers,
+//             following
+//         } = req.body;
+//         const { email } = req.body
+//         let profileImage = req.files;
+//        // let email = req.body.email;
+//         // if (!email) {
+//         //     return res.status(400).send({ status: false, msg: " Email is required" })
+//         // }
+//         // const isValidEmail = emailValidator.isEmail(email)
+//         // if (!isValidEmail) {
+//         //     return res.status(400).send({ status: false, msg: " invalid email" })
+//         // }
+//         // const dataExist = await userModel.findOne({ email: email });
+//         // if (dataExist) {
+//         //     return res.status(400).send({ message: "email already in use" });
+//         // }
+//         if(!email){
+//             return res.status(400).send({ status: false, msg: " email is required" })
+//         }
+
+//         let validemail = await userModel.findOne({ email :email })
+//         if (validemail) {
+//             return res.status(400).send({ status: false, msg: "email id is already exist" })
+//         }
+
+//         const isValidEmail = emailValidator.isEmail(email)
+//         if (!isValidEmail) {
+//              return res.status(400).send({ status: false, msg: " invalid email" })
+//         }
+//         if (profileImage && profileImage.length > 0) {
+//             profileImage = await aws.uploadFile(profileImage[0]);
+//             }
+//             // else {
+//             //     return res.status(400).send({ status: false, message: "profileImage is required" })
+//             // }
+//         const salt = await bcrypt.genSalt(10);
+//         password = await bcrypt.hash(password, salt);
+//         const userRequest = {
+//             fullname,
+//             username,
+//             email,
+//             password,
+//             profileImage,
+//             gender,
+//             phoneNumber,
+//             address,
+//             story,
+//             followers,
+//             following
+//         };
+//         const userData = await userModel.create(userRequest);
+//         return res
+//             .status(201)
+//             .send({ message: "User signup successfully", data: userData });
+//     } catch (err) {
+//         return res.status(500).send(err.message);
+//     }
+// };
+
+exports.user_signup = async function (req, res) {
     try {
+    //if image path is given then run this code else run else code
+        if (req.files && req.files.length > 0) {
         let {
             fullname,
             username,
-            email,
             password,
-            avatar,
             gender,
             phoneNumber,
             address,
@@ -22,21 +97,33 @@ exports.user_signup = async (req, res) => {
             followers,
             following
         } = req.body;
-        //let email = req.body.email;
+        const { email } = req.body
+        let avatar = req.files;
+
         if (!email) {
-            return res.status(400).send({ status: false, msg: " Email is required" })
+            return res.status(400).send({ status: false, msg: " email is required" })
         }
+
+        let validemail = await userModel.findOne({ email })
+        if (validemail) {
+            return res.status(400).send({ status: false, msg: "email id is already exist" })
+        }
+
         const isValidEmail = emailValidator.isEmail(email)
         if (!isValidEmail) {
             return res.status(400).send({ status: false, msg: " invalid email" })
         }
-        const dataExist = await userModel.findOne({ email: email });
-        if (dataExist) {
-            return res.status(400).send({ message: "email already in use" });
+        if (avatar && avatar.length > 0) {
+            avatar = await aws.uploadFile(avatar[0]);
         }
+        else {
+            return res.status(400).send({ status: false, message: "profileImage or avatar is required" })
+        }
+
         const salt = await bcrypt.genSalt(10);
-        password = await bcrypt.hash(password, salt);
-        const userRequest = {
+        password = await bcrypt.hash(password, salt)
+
+        let finalData = {
             fullname,
             username,
             email,
@@ -49,14 +136,63 @@ exports.user_signup = async (req, res) => {
             followers,
             following
         };
-        const userData = await userModel.create(userRequest);
-        return res
-            .status(201)
-            .send({ message: "User signup successfully", data: userData });
-    } catch (err) {
-        return res.status(500).send(err.message);
+        const userData = await userModel.create(finalData);
+        res.status(201).send({ status: true, data: userData });
     }
-};
+else {
+    let {
+        fullname,
+        username,
+        password,
+        gender,
+        phoneNumber,
+        address,
+        story,
+        followers,
+        following
+    } = req.body;
+    const { email } = req.body
+
+    if (!email) {
+        return res.status(400).send({ status: false, msg: " email is required" })
+    }
+
+    let validemail = await userModel.findOne({ email })
+    if (validemail) {
+        return res.status(400).send({ status: false, msg: "email id is already exist" })
+    }
+
+    const isValidEmail = emailValidator.isEmail(email)
+    if (!isValidEmail) {
+        return res.status(400).send({ status: false, msg: " invalid email" })
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    password = await bcrypt.hash(password, salt)
+
+    let finalData = {
+        fullname,
+        username,
+        email,
+        password,
+        gender,
+        phoneNumber,
+        address,
+        story,
+        followers,
+        following
+    };
+    const userData = await userModel.create(finalData);
+    res.status(201).send({ status: true, data: userData });
+}
+}
+    catch (error) {
+        console.log(error)
+        return res.status(500).send({ status: false, msg: error.message })
+    }
+}
+
+
 
 exports.send_otp_toEmail = async (req, res) => {
     try {
@@ -138,78 +274,78 @@ exports.logout = async (req, res) => {    //not working test again later
 // Forgot password api for sub admin verification by email otp
 exports.forgotPassword = async (req, res) => {
     try {
-      const { email } = req.body;
-      const customerData = await userModel.findOne({ email: email });
-      if (!customerData) {
-        return res.status(400).send({ message: "email is not valid" });
-      }
-      const otp = Math.floor(100000 + Math.random() * 900000);
-      const mailOptions = {
-        from: process.env.AUTH_EMAIL,
-        to: email,
-        subject: "Forgot Password",
-        html: `<h1>OTP for forgot password is ${otp}</h1>`,
-      };
-      transporter.sendMail(mailOptions, function (error, info) {
-        if (error) {
-          console.log(error);
-        } else {
-          console.log("Email sent: " + info);
+        const { email } = req.body;
+        const customerData = await userModel.findOne({ email: email });
+        if (!customerData) {
+            return res.status(400).send({ message: "email is not valid" });
         }
-      });
-      await userModel.findOneAndUpdate(
-        { email: email },
-        { otp: otp, otpTime: Date.now() }
-      );
-      return res.status(200).send({ message: "OTP sent to your email", email });
-    } catch (err) {
-      return res.status(500).send(err.message);
-    }
-  };
-  // Update password and encrypt it before saving it. if otp is correct and otp is not expired then only update password
-  exports.updatePassword = async (req, res) => {
-    try {
-      const { email, otp, password } = req.body;
-      const customerData = await userModel.findOne({ email: email });
-      if (!customerData) {
-        return res.status(400).send({ message: "email is not valid" });
-      }
-      if(!otp){
-        return res.status(400).send({ message: "otp is required" });
-        }
-      if (customerData.otp == otp) {
-        if (Date.now() - customerData.otpTime > 300000) {
-          return res.status(400).send({ message: "OTP expired" });
-        }
-        const salt = await bcrypt.genSalt(10);
-        const newPassword = await bcrypt.hash(password, salt);
+        const otp = Math.floor(100000 + Math.random() * 900000);
+        const mailOptions = {
+            from: process.env.AUTH_EMAIL,
+            to: email,
+            subject: "Forgot Password",
+            html: `<h1>OTP for forgot password is ${otp}</h1>`,
+        };
+        transporter.sendMail(mailOptions, function (error, info) {
+            if (error) {
+                console.log(error);
+            } else {
+                console.log("Email sent: " + info);
+            }
+        });
         await userModel.findOneAndUpdate(
-          { email: email },
-          { password: newPassword }
+            { email: email },
+            { otp: otp, otpTime: Date.now() }
         );
-        return res
-          .status(200)
-          .send({ message: "Password updated successfully" });
-      } 
-      else {
-        return res.status(400).send({ message: "OTP is not correct" });
-      }
+        return res.status(200).send({ message: "OTP sent to your email", email });
     } catch (err) {
-      return res.status(500).send(err.message);
+        return res.status(500).send(err.message);
     }
-  };
+};
+// Update password and encrypt it before saving it. if otp is correct and otp is not expired then only update password
+exports.updatePassword = async (req, res) => {
+    try {
+        const { email, otp, password } = req.body;
+        const customerData = await userModel.findOne({ email: email });
+        if (!customerData) {
+            return res.status(400).send({ message: "email is not valid" });
+        }
+        if (!otp) {
+            return res.status(400).send({ message: "otp is required" });
+        }
+        if (customerData.otp == otp) {
+            if (Date.now() - customerData.otpTime > 300000) {
+                return res.status(400).send({ message: "OTP expired" });
+            }
+            const salt = await bcrypt.genSalt(10);
+            const newPassword = await bcrypt.hash(password, salt);
+            await userModel.findOneAndUpdate(
+                { email: email },
+                { password: newPassword }
+            );
+            return res
+                .status(200)
+                .send({ message: "Password updated successfully" });
+        }
+        else {
+            return res.status(400).send({ message: "OTP is not correct" });
+        }
+    } catch (err) {
+        return res.status(500).send(err.message);
+    }
+};
 
 
 exports.userUpdate = async (req, res) => {
     try {
-
-        const userId = req.body.userId;
+if(req.files && req.files.length > 0){
+        //const userId = req.body.userId;
         let {
             fullname,
             username,
             email,
             password,
-            avatar,
+            //avatar,
             gender,
             phoneNumber,
             address,
@@ -218,16 +354,30 @@ exports.userUpdate = async (req, res) => {
             following,
             isDeleted
         } = req.body;
-        const userData = await userModel.findOne({ _id: userId });
+        let avatar = req.files;
+
+        const userData = await userModel.findOne({ _id: req.user.userId });
         if (password) {
             const salt = await bcrypt.genSalt(10);
             password = await bcrypt.hash(password, salt);
         }
-        if (userData.isDeleted == true) {
-            return res.status(400).send({ message: "user is not registered, register first" });
+        // if (userData.isDeleted == true) {
+        //     return res.status(400).send({ message: "user is not registered, register first" });
+        // }
+        //not authorized to update other user data
+       // if (userData._id != userId) {
+        //     return res.status(400).send({ message: "not authorized to update other user data" });
+        // }
+
+        if (avatar && avatar.length > 0) {
+            avatar = await aws.uploadFile(avatar[0]);
         }
+        else {
+            return res.status(400).send({ status: false, message: "profileImage or avatar is required" })
+        }
+
         const updatedData = await userModel.findOneAndUpdate(
-            { _id: userId, isDeleted: false },
+            { _id: req.user.userId, isDeleted: false },
             {
                 fullname: fullname,
                 username: username,
@@ -246,7 +396,61 @@ exports.userUpdate = async (req, res) => {
         return res
             .status(200)
             .send({ message: "user profile update successfully", data: updatedData });
-    } catch (err) {
+    } 
+    else {
+        //const userId = req.body.userId;
+        let {
+            fullname,
+            username,
+            email,
+            password,
+            //avatar,
+            gender,
+            phoneNumber,
+            address,
+            story,
+            followers,
+            following,
+            isDeleted
+        } = req.body;
+       //find user id from jwt token
+        const userData = await userModel.findOne({ _id: req.user.userId });
+        
+        if (password) {
+            const salt = await bcrypt.genSalt(10);
+            password = await bcrypt.hash(password, salt);
+        }
+        // if (userData.isDeleted == true) {
+        //     return res.status(400).send({ message: "user is not registered, register first" });
+        // }
+       //user can update their own data only after applying jwt token in header
+        // if (userData._id != userId) {
+        //     return res.status(400).send({ message: "not authorized to update other user data" });
+        // }
+
+        const updatedData = await userModel.findOneAndUpdate(
+            { _id: req.user.userId, isDeleted: false },
+            {
+                fullname: fullname,
+                username: username,
+                email: email,
+                password: password,
+                //avatar: avatar,
+                gender: gender,
+                phoneNumber: phoneNumber,
+                address: address,
+                story: story,
+                followers: followers,
+                following: following,
+                isDeleted: isDeleted,
+            }, { new: true }
+        );
+        return res
+            .status(200)
+            .send({ message: "user profile update successfully", data: updatedData });
+    }
+    }
+    catch (err) {
         return res.status(500).send(err.message);
     }
 };
@@ -280,7 +484,7 @@ exports.searchByUsername = async (req, res) => {
         if (user.length == 0) {
             return res.status(400).send({ message: "user not found" });
         }
-        return res.status(200).send({ message: "user details",count:userCount, data: user });
+        return res.status(200).send({ message: "user details", count: userCount, data: user });
     } catch (err) {
         return res.status(500).send(err.message);
     }
@@ -288,7 +492,7 @@ exports.searchByUsername = async (req, res) => {
 
 exports.getByUsername = async (req, res) => {
     try {
-        const user = await userModel.findOne({username:req.body.username})
+        const user = await userModel.findOne({ username: req.body.username })
             .select("-password")
             .populate("followers following", "-password");
         if (!user) return res.status(400).send({ msg: "User does not exist." });
@@ -300,11 +504,19 @@ exports.getByUsername = async (req, res) => {
 
     exports.deleteUser = async (req, res) => {
         try {
-            const userId = req.body.userId;
-            const checkUser = await userModel.find({ _id: userId, isDeleted: false });
+            //const userId = req.user.userId;
+            const checkUser = await userModel.find({ _id: req.user.userId, isDeleted: false });
+            // if (!checkUser) {
+            //     return res.status(400).send({ message: "user not found, or unothorised" });
+            // }
+        // delete the user only if the user given in body is same as the user in token
+        // if (checkUser._id != userId) {
+        //     return res.status(400).send({ message: "not authorized to delete other user data" });
+        // }
+
             if (checkUser) {
-                const user = await userModel.updateOne({ _id: userId, isDeleted: false }, { $set: { isDeleted: true, deletedAt: Date.now() } }, { new: true });
-               return res.status(200).send({ msg: "deleted successfully", data: user });
+                const user = await userModel.updateOne({ _id: req.user.userId, isDeleted: false }, { $set: { isDeleted: true, deletedAt: Date.now() } }, { new: true });
+                return res.status(200).send({ msg: "deleted successfully", data: user });
             } else {
                 return res.status(400).send({ error: 'user not found' });
             }
@@ -312,104 +524,105 @@ exports.getByUsername = async (req, res) => {
             return res.status(500).send(err.message);
         }
     }
-
+ 
 
 exports.follow = async (req, res) => {
-    try {     
+    try {
         const userId = req.params.id;
-        const followers = req.body.id;
-        const user = await userModel.find({_id: userId,followers: followers});
+        const followers = req.user.userId;
         
+        const user = await userModel.find({ _id: userId, followers: followers });
+
         if (user.length > 0)
             return res.status(500).json({ msg: "You followed this user." });
 
         const newUser = await userModel.findOneAndUpdate(
-            
+
             { _id: userId },
-            {$push: { followers: followers }},
+            { $push: { followers: followers } },
             { new: true }
         ).populate("followers following", "-password");
-        
+
         await userModel.findOneAndUpdate(
             { _id: followers },
             {
-                $push: { following: userId},
+                $push: { following: userId },
             },
             { new: true }
         );
 
-        return res.status(200).send({ msg : "success" , data: newUser });
+        return res.status(200).send({ msg: "success", data: newUser });
     } catch (err) {
         return res.status(500).json({ msg: err.message });
     }
 }
 
-exports.unfollow= async (req, res) => {
+exports.unfollow = async (req, res) => {
     try {
         const userId = req.params.id;
-        const followers = req.body.id;
+        const followers = req.user.userId;
         const newUser = await userModel.findOneAndUpdate(
             { _id: userId },
-            {$pull: { followers: followers }},
+            { $pull: { followers: followers } },
             { new: true }
         ).populate("followers following", "-password");
-  
+
         await userModel.findOneAndUpdate(
             { _id: followers },
             {
-                $pull: { following: userId},
+                $pull: { following: userId },
             },
             { new: true }
         );
 
-        return res.status(200).send({ msg : "success" , data: newUser });
+        return res.status(200).send({ msg: "success", data: newUser });
     } catch (err) {
         return res.status(500).json({ msg: err.message });
     }
 }
 
-  exports.suggestionsUser= async (req, res) => {
+exports.suggestionsUser = async (req, res) => {   
     try {
-        
-      const newArr = [...req.body.following, req.body._id]; //body.following means the any one following userid that follows the main user, body.id = main user id
 
-      const num = req.query.num || 10;
+        const newArr = [...req.body.following, req.user.userId/*req.body._id*/]; //body.following means the any one following userid that follows the main user, body.id = main user id
 
-      const users = await userModel.aggregate([
-        { $match: { _id: { $nin: newArr } } },
-        { $sample: { size: Number(num) } },
-        {
-          $lookup: {
-            from: "users",
-            localField: "followers",
-            foreignField: "_id",
-            as: "followers",
-          },
-        },
-        {
-          $lookup: {
-            from: "users",
-            localField: "following",
-            foreignField: "_id",
-            as: "following",
-          },
-        },
-      ]).project("-password -saved");
+        const num = req.query.num || 10;  // 10 means the no. of suggested user to be shown, you can increase or decrease it
 
-      return res.json({
-        result: users.length,
-        users
-      });
+        const users = await userModel.aggregate([
+            { $match: { _id: { $nin: newArr } } },
+            { $sample: { size: Number(num) } },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "followers",
+                    foreignField: "_id",
+                    as: "followers",
+                },
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "following",
+                    foreignField: "_id",
+                    as: "following",
+                },
+            },
+        ]).project("-password -saved");
+
+        return res.json({
+            result: users.length,
+            users
+        });
     } catch (err) {
-      return res.status(500).json({ msg: err.message });
+        return res.status(500).json({ msg: err.message });
     }
-  }
+}
 
-
+//_id: req.user.userId
 
 exports.getFollowers = async (req, res) => {
     try {
-        const userId = req.body.id;
+        const userId = req.user.userId;
         const user = await userModel.findById(userId).populate("followers following", "-password").select("-password");
         return res.status(200).send({ message: "follower details", data: user });
     } catch (err) {
@@ -419,7 +632,7 @@ exports.getFollowers = async (req, res) => {
 
 exports.getFollowing = async (req, res) => {
     try {
-        const userId = req.body.id;
+        const userId = req.user.userId;
         const user = await userModel.findById(userId).populate("following", "-password").select("-password");
         return res.status(200).send({ message: "user details", data: user });
     } catch (err) {
@@ -429,7 +642,7 @@ exports.getFollowing = async (req, res) => {
 
 exports.getFollowersCount = async (req, res) => {
     try {
-        const userId = req.body.id;
+        const userId = req.user.userId;
         const user = await userModel.findById(userId).select("followers");
         return res.status(200).send({ message: "followers count", count: user.followers.length });
     } catch (err) {
@@ -439,7 +652,7 @@ exports.getFollowersCount = async (req, res) => {
 
 exports.getFollowingCount = async (req, res) => {
     try {
-        const userId = req.body.id;
+        const userId = req.user.userId;
         const user = await userModel.findById(userId).select("following");
         return res.status(200).send({ message: "following count", count: user.following.length });
     } catch (err) {
@@ -473,23 +686,23 @@ exports.getFollowingCount = async (req, res) => {
 
 exports.blockUser = async (req, res) => {
     try {
-        const userId = req.body.id;
+        const userId = req.user.userId;
         const blockId = req.params.id;
-       // const user = await userModel.findById(userId);
-         const user = await userModel.find({_id: userId,block: blockId});
+        // const user = await userModel.findById(userId);
+        const user = await userModel.find({ _id: userId, block: blockId });
         if (user.length > 0)
             return res.status(500).json({ msg: "You already blocked this user." });
         if (!user) return res.status(400).send({ msg: "User does not exist." });
         const block = await userModel.findById(blockId);
         if (!block) return res.status(400).send({ msg: "User does not exist." });
-        await userModel.findOneAndUpdate(
+        const blockedUser = await userModel.findOneAndUpdate(
             { _id: userId },
             {
-                $push: { block: blockId},
+                $push: { block: blockId },
             },
             { new: true }
         );
-        return res.status(200).send({ message: "user blocked" });
+        return res.status(200).send({ message: "user blocked", data: blockedUser });
     } catch (err) {
         return res.status(500).json({ msg: err.message });
     }
@@ -497,20 +710,20 @@ exports.blockUser = async (req, res) => {
 
 exports.unblockUser = async (req, res) => {
     try {
-        const userId = req.body.id;
+        const userId = req.user.userId;
         const blockId = req.params.id;
         const user = await userModel.findById(userId);
         if (!user) return res.status(400).send({ msg: "User does not exist." });
         const block = await userModel.findById(blockId);
         if (!block) return res.status(400).send({ msg: "User does not exist." });
-        await userModel.findOneAndUpdate(
+        const unblockedUser = await userModel.findOneAndUpdate(
             { _id: userId },
             {
-                $pull: { block: blockId},
+                $pull: { block: blockId },
             },
             { new: true }
         );
-        return res.status(200).send({ message: "user unblocked" });
+        return res.status(200).send({ message: "user unblocked", data : unblockedUser });
     } catch (err) {
         return res.status(500).json({ msg: err.message });
     }
@@ -518,10 +731,10 @@ exports.unblockUser = async (req, res) => {
 //yha se
 exports.getBlockedUsers = async (req, res) => {
     try {
-        const userId = req.body.id;
+        const userId = req.user.userId;
         const user = await userModel.findById(userId).populate("block", "-password").select("-password");
-        if(user.block.length == 0)
-        return res.status(400).send({ msg: "No blocked users." });
+        if (user.block.length == 0)
+            return res.status(400).send({ msg: "No blocked users." });
         return res.status(200).send({ message: "user details", data: user });
     } catch (err) {
         return res.status(500).json({ msg: err.message });
@@ -530,15 +743,13 @@ exports.getBlockedUsers = async (req, res) => {
 
 exports.getBlockedUsersCount = async (req, res) => {
     try {
-        const userId = req.body.id;
+        const userId = req.user.userId;
         const user = await userModel.findById(userId).select("block");
         return res.status(200).send({ message: "blocks count", count: user.block.length });
     } catch (err) {
         return res.status(500).json({ msg: err.message });
     }
 }
-
-//create an api where i can see posts of whom i am following only with their userNames
 
 
 // exports.getTimeline = async (req, res) => {

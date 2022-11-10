@@ -32,10 +32,11 @@ const userSchema = new mongoose.Schema(
             type:String,
             unique:true,
         },
-        avatar: {
-            type: String,
-            default:
-                "https://res.cloudinary.com/devatchannel/image/upload/v1602752402/avatar/avatar_cugq40.png",
+        avatar : {
+            type : String,
+            //required : true,
+            default : "https://res.cloudinary.com/dxqjyqz8f/image/upload/v1622021027/avatars/default_avatar.png"
+            //s3 link
         },
         //role: { type: String, default: "user" },
         gender: { type: String, enum: ["male", "female", "other"] },

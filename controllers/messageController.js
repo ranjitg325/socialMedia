@@ -1,5 +1,6 @@
 const Conversations = require("../models/conversationModel");
 const Messages = require("../models/messageModel");
+const Users = require("../models/userModel");
 
 class APIfeatures {
   constructor(query, queryString) {
@@ -129,4 +130,227 @@ exports.deleteConversation = async (req, res) => {
     return res.status(500).json({ msg: err.message });
   }
 }
+
+
+exports.createGroup = async (req, res) => {
+  try {
+    const { groupName, recipients } = req.body;
+    if (recipients.length === 0)
+      return res.status(400).json({ msg: "Please add people." });
+
+const verifyUserIds = await Users.find({ _id: { $in: recipients } });
+    if (verifyUserIds.length !== recipients.length)
+      return res.status(400).json({ msg: "Please add valid people." });
+//group creator will be added automatically
+const newGroup = new Conversations({
+      recipients: [...recipients, req.body._id],
+      groupName,
+      isGroup: true,
+    });
+
+    await newGroup.save();
+
+    return res.json({ msg: "Create Success", data: newGroup });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
+  }
+}
+
+exports.groupChat = async (req, res) => {
+  try {
+    const { groupName, sender, text, media, call } = req.body;
+    
+    if(!groupName) return res.status(400).json({msg: "group is not found"})
+    const newConversation = await Conversations.findOneAndUpdate(
+      { groupName },
+      { text, media, call },
+      { new: true }
+    );
+    if (!newConversation)
+      return res.status(400).json({ msg: "This group does not exist." });
+
+    if (!newConversation.recipients.includes(sender))
+      return res.status(400).json({ msg: "You are not a part of this group,so you can't do message" });
+
+    const newMessage = new Messages({
+      conversation: newConversation._id,
+      sender,
+      call,
+      text,
+      media,
+    });
+
+    await newMessage.save();
+
+    res.status(200).json({ msg: "Create Success", data: newMessage });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
+  }
+}
+
+exports.updateGroupName = async (req, res) => {
+  try {
+    const { groupName } = req.body;
+    if (!groupName) return res.status(400).json({ msg: "group name required" });
+    const updateGroup = await Conversations.findOneAndUpdate(
+      {
+        _id: req.params.id,   //id=conversation id
+        isGroup: true,
+      },
+      { groupName },
+      { new: true }
+    );
+    res.json({ msg: "Update Success!", data: updateGroup });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
+  }
+}
+//show only group memebers using select
+exports.getGroupMembers = async (req, res) => {
+  try {
+    const group = await Conversations.findOne({
+      _id: req.params.id,
+      isGroup: true,
+    }).select("recipients");
+    res.status(200).json({ msg: "Get Success", data: group });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
+  }
+}
+
+exports.getGroupMembersCount = async (req, res) => {
+  try {
+    const group = await Conversations.findOne({
+      _id: req.params.id,
+      isGroup: true,
+    }).select("recipients");
+    res.status(200).json({ msg: "Get Success", data: group.recipients.length });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
+  }
+}
+
+exports.getGroupMessages = async (req, res) => {
+  try {
+    const features = new APIfeatures(
+      Messages.find({
+        conversation: req.params.id,
+      }),
+      req.query
+    ).paginating();
+
+    const messages = await features.query.sort("createdAt");
+
+    res.status(200).json({
+      result: messages.length,
+      messages,
+    });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
+  }
+}
+//user can delete only his own message
+exports.deleteGroupMessages = async (req, res) => {
+  try {
+    const deleteGroupMsg = await Messages.findOneAndDelete({
+      _id: req.params.id, //id= message id
+      conversation: req.body._id,
+      sender: req.body.id
+    });
+    res.json({ msg: "Delete Success!", data: deleteGroupMsg });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
+  }
+}
+
+//exit from group
+exports.exitGroup = async (req, res) => {
+  try {
+    const exitGroup = await Conversations.findOneAndUpdate(
+      {
+        _id: req.params.id, //id=conversation id
+        isGroup: true,
+      },
+      { $pull: { recipients: req.body._id } },
+      { new: true }
+    );
+    res.json({ msg: "Exit Success!", data: exitGroup });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
+  }
+}
+
+
+//add group member
+exports.addMemberToGroup = async (req, res) => {
+  try {
+    const { recipients } = req.body;
+    if (recipients.length === 0)
+      return res.status(400).json({ msg: "Please add people." });
+
+    const verifyUserIds = await Users.find({ _id: { $in: recipients } });
+    if(!verifyUserIds) 
+    return res.status(400).json({ msg: "Please add valid people." });
+
+      if(!req.body._id)
+      return res.status(400).json({ msg: "creater id required" });
+
+//if user is already added  
+    const group = await Conversations.findOne({
+      _id: req.params.id,
+      isGroup: true,
+    }).select("recipients");
+    if (group.recipients.includes(recipients))
+      return res.status(400).json({ msg: "this user is Already added in group" });
+
+
+    const addGroupMembers = await Conversations.findOneAndUpdate(
+      {
+        _id: req.params.id, //id=conversation id
+        isGroup: true,
+        creator: req.body._id, //id=user id(the user who is going to add members)
+      },
+      { $push: { recipients: recipients } },
+      { new: true }
+    );
+    
+    res.json({ msg: "Add Success!", data: addGroupMembers });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
+  }
+}
+
+//remove group member by group creator only
+exports.removeMemberFromGroup = async (req, res) => {
+  try {
+    const { recipients } = req.body;
+      if(!req.body._id)
+      return res.status(400).json({ msg: "creater id required" });
+
+//if user is already added  
+    const group = await Conversations.findOne({
+      _id: req.params.id,
+      isGroup: true,
+    }).select("recipients");
+    if (!group.recipients.includes(recipients))
+      return res.status(400).json({ msg: "this user is not in group" });
+
+
+    const removeMemberFromGroup = await Conversations.findOneAndUpdate(  
+      {
+        _id: req.params.id, //id=conversation id
+        isGroup: true,
+        creator: req.body._id, //id=user id(the user who is going to remove members)
+      },
+      { $pull: { recipients: recipients } },
+      { new: true }
+    );
+    
+    res.json({ msg: "Remove Success!", data: removeMemberFromGroup });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
+  }
+}
+
+
 

@@ -26,7 +26,7 @@ let transporter = nodemailer.createTransport({
         // user: process.env.AUTH_EMAIL,  //if write this credential in .env file then it will not work
         // pass: process.env.AUTH_PASS   //if write this credential in .env file then it will not work
         user: "ranjitg325@gmail.com",    //change this later becoz it is not secure here
-        pass: "amxaataaggzhrlth"         ////change this later becoz it is not secure here
+        pass: "rfmnarhkdrdnhsvr"         ////change this later becoz it is not secure here
     },
     customAuth: {
         'MY-CUSTOM-METHOD': myCustomMethod
