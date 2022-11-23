@@ -59,7 +59,7 @@ exports.getConversations = async (req, res) => {
   try {
     const features = new APIfeatures(
       Conversations.find({
-        recipients: req.body._id,
+        recipients: req.user.userId,
       }),
       req.query
     ).paginating();
@@ -81,8 +81,8 @@ exports.getMessages = async (req, res) => {
     const features = new APIfeatures(
       Messages.find({
         $or: [
-          { sender: req.body._id, recipient: req.params.id },
-          { sender: req.params.id, recipient: req.body._id },
+          { sender: req.user.userId, recipient: req.params.id },
+          { sender: req.params.id, recipient: req.user.userId },
         ],
       }),
       req.query
@@ -102,7 +102,7 @@ exports.deleteMessages = async (req, res) => {
   try {
     const deleteMsg = await Messages.findOneAndDelete({
       _id: req.params.id, //id= message id
-      sender: req.body._id,
+      sender: req.user.userId,
     });
     res.json({ msg: "Delete Success!", data: deleteMsg });
   } catch (err) {
@@ -111,19 +111,19 @@ exports.deleteMessages = async (req, res) => {
 }
 exports.deleteConversation = async (req, res) => {
   try {
-    const recipientsData = await Conversations.findOne({ recipients: req.body._id }); //in recipients provide only recipient id not the sender id
+    const recipientsData = await Conversations.findOne({ recipients: req.user.userId }); //in recipients provide only recipient id not the sender id
     if (!recipientsData) {
       return res.status(400).send({ message: "not a valid user" });
     }
     const newConver = await Conversations.findOneAndDelete({
       _id: req.params.id, //id= conversation id
-      recipients: req.body._id,
+      recipients: req.user.userId,
     });
-    const recipientData = await Messages.findOne({ recipient: req.body._id });
+    const recipientData = await Messages.findOne({ recipient: req.user.userId });
     if (!recipientData) {
       return res.status(400).send({ message: "not valid user" });
     }
-    await Messages.deleteMany({ recipient: req.body._id, conversation: req.params.id });
+    await Messages.deleteMany({ recipient: req.user.userId, conversation: req.params.id });
 
     res.json({ msg: "Delete Success!", data: newConver });
   } catch (err) {
@@ -143,7 +143,7 @@ const verifyUserIds = await Users.find({ _id: { $in: recipients } });
       return res.status(400).json({ msg: "Please add valid people." });
 //group creator will be added automatically
 const newGroup = new Conversations({
-      recipients: [...recipients, req.body._id],
+      recipients: [...recipients, req.user.userId],
       groupName,
       isGroup: true,
     });
@@ -250,18 +250,18 @@ exports.getGroupMessages = async (req, res) => {
   }
 }
 //user can delete only his own message
-exports.deleteGroupMessages = async (req, res) => {
-  try {
-    const deleteGroupMsg = await Messages.findOneAndDelete({
-      _id: req.params.id, //id= message id
-      conversation: req.body._id,
-      sender: req.body.id
-    });
-    res.json({ msg: "Delete Success!", data: deleteGroupMsg });
-  } catch (err) {
-    return res.status(500).json({ msg: err.message });
-  }
-}
+// exports.deleteGroupMessages = async (req, res) => {
+//   try {
+//     const deleteGroupMsg = await Messages.findOneAndDelete({
+//       _id: req.params.id, //id= message id
+//       conversation: req.body._id,
+//       sender: req.body.id
+//     });
+//     res.json({ msg: "Delete Success!", data: deleteGroupMsg });
+//   } catch (err) {
+//     return res.status(500).json({ msg: err.message });
+//   }
+// }
 
 //exit from group
 exports.exitGroup = async (req, res) => {
@@ -271,7 +271,7 @@ exports.exitGroup = async (req, res) => {
         _id: req.params.id, //id=conversation id
         isGroup: true,
       },
-      { $pull: { recipients: req.body._id } },
+      { $pull: { recipients: req.user.userId } },
       { new: true }
     );
     res.json({ msg: "Exit Success!", data: exitGroup });
@@ -292,7 +292,7 @@ exports.addMemberToGroup = async (req, res) => {
     if(!verifyUserIds) 
     return res.status(400).json({ msg: "Please add valid people." });
 
-      if(!req.body._id)
+      if(!req.user.userId)
       return res.status(400).json({ msg: "creater id required" });
 
 //if user is already added  
@@ -308,7 +308,7 @@ exports.addMemberToGroup = async (req, res) => {
       {
         _id: req.params.id, //id=conversation id
         isGroup: true,
-        creator: req.body._id, //id=user id(the user who is going to add members)
+        creator: req.user.userId, //id=user id(the user who is going to add members)
       },
       { $push: { recipients: recipients } },
       { new: true }
@@ -324,7 +324,7 @@ exports.addMemberToGroup = async (req, res) => {
 exports.removeMemberFromGroup = async (req, res) => {
   try {
     const { recipients } = req.body;
-      if(!req.body._id)
+      if(!req.user.userId)
       return res.status(400).json({ msg: "creater id required" });
 
 //if user is already added  
@@ -340,7 +340,7 @@ exports.removeMemberFromGroup = async (req, res) => {
       {
         _id: req.params.id, //id=conversation id
         isGroup: true,
-        creator: req.body._id, //id=user id(the user who is going to remove members)
+        creator: req.user.userId, //id=user id(the user who is going to remove members)
       },
       { $pull: { recipients: recipients } },
       { new: true }

@@ -13,7 +13,7 @@ const Notifies = require("../models/notificationModel");
         text,
         content,
         image,
-        user: req.body._id,
+        user: req.user.userId,
       });
 
       await notify.save();
@@ -26,7 +26,7 @@ const Notifies = require("../models/notificationModel");
   exports.removeNotify= async (req, res) => {
     try {
       const notify = await Notifies.findOneAndDelete({
-        _id: req.body._id,
+        _id: req.user.userId,
        // url: req.body.url,
       });
 
@@ -37,7 +37,7 @@ const Notifies = require("../models/notificationModel");
   }
   exports.getNotifies= async (req, res) => {
     try {
-      const notifies = await Notifies.find({ recipients: req.body._id })
+      const notifies = await Notifies.find({ recipients: req.user.userId, })
         .sort("-createdAt")
         .populate("user", "avatar username");
 
@@ -49,7 +49,7 @@ const Notifies = require("../models/notificationModel");
   exports.isReadNotify= async (req, res) => {
     try {
       const notifies = await Notifies.findOneAndUpdate(
-        { _id: req.body.id },
+        { _id: req.user.userId, },
         {
           isRead: true,
         }
@@ -62,7 +62,7 @@ const Notifies = require("../models/notificationModel");
   }
   exports.deleteAllNotifies= async (req, res) => {
     try {
-      const notifies = await Notifies.deleteMany({ recipients: req.body._id });
+      const notifies = await Notifies.deleteMany({ recipients: req.user.userId });
 
       return res.status(200).json({ notifies });
     } catch (err) {

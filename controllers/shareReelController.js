@@ -4,10 +4,10 @@ const shareReelModel = require('../models/shareReelModel');
 
 exports.shareReel = async (req, res) => {
     try {
-        const { mainUser, sharedUser, reelId /*,reelUserId*/ } = req.body;
-        const mainUserData = await userModel.findOne({ _id: mainUser });
-        if (!mainUserData)
-            return res.status(400).json({ msg: 'mainUserData does not exist.' });
+        const { /*mainUser,*/ sharedUser, reelId /*,reelUserId*/ } = req.body;
+        // const mainUserData = await userModel.findOne({ _id: mainUser });
+        // if (!mainUserData)
+        //     return res.status(400).json({ msg: 'mainUserData does not exist.' });
 
         const sharedUserData = await userModel.findOne({ _id: sharedUser });
         if (!sharedUserData)
@@ -18,7 +18,7 @@ exports.shareReel = async (req, res) => {
             return res.status(400).json({ msg: 'This reel does not exist.' });
 
         const newShareReel = new shareReelModel({
-            mainUser,
+            mainUser: req.user.userId, //the person's id , who is going to share something
             sharedUser,
             reelId,
             /*reelUserId,*/

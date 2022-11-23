@@ -46,7 +46,7 @@ exports.admin_login = async (req, res) => {
 
 exports.admin_update = async (req, res) => {
     try {
-        const adminId = req.body.adminId;
+        const adminId = req.user.userId;
         let { firstName, lastName, email, phoneNumber, password, address, isDeleted } = req.body;
         const userAdmin = await adminModel.findOne({ _id: adminId });
         if (password) {
@@ -76,7 +76,7 @@ exports.admin_update = async (req, res) => {
 
 exports.getAdminById = async (req, res) => {
     try {
-        const adminId = req.body.adminId;
+        const adminId = req.user.userId;
         const adminData = await adminModel.findOne({ _id: adminId });
         return res.status(200).send({ setting: { success: "1", message: "admin data", data: adminData } });
     } catch (err) {
@@ -96,7 +96,7 @@ exports.getAllAdmins = async (req, res) => {
 
 exports.deleteAdmin = async (req, res) => {
     try {
-        const adminId = req.body.adminId;
+        const adminId = req.user.userId;
         const checkAdmin = await adminModel.find({ _id: adminId, isDeleted: false });
         if (checkAdmin) {
             const user = await adminModel.updateOne({ _id: adminId, isDeleted: false }, { $set: { isDeleted: true, deletedAt: Date.now() } }, { new: true });

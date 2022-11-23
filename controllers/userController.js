@@ -137,7 +137,7 @@ exports.user_signup = async function (req, res) {
             following
         };
         const userData = await userModel.create(finalData);
-        res.status(201).send({ status: true, data: userData });
+       return res.status(201).send({ status: true, data: userData });
     }
 else {
     let {
@@ -183,7 +183,7 @@ else {
         following
     };
     const userData = await userModel.create(finalData);
-    res.status(201).send({ status: true, data: userData });
+    return res.status(201).send({ status: true, data: userData });
 }
 }
     catch (error) {

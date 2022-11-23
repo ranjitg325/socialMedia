@@ -4,11 +4,8 @@ const userModel = require('../models/userModel');
 
 exports.createCommentReel = async (req, res) => {
     try {
-        const { reelId, user, content, tag, reply, likes, reelUserId } = req.body;
-        const userData = await userModel.findOne({ _id: user });
-        if (!userData)
-            return res.status(400).json({ msg: 'User does not exist.' });
-
+        const { reelId, content, tag, reply, likes, reelUserId } = req.body;
+    
         const reel = await reelModel.findById(reelId);
         if (!reel)
             return res.status(400).json({ msg: 'This reel does not exist.' });
@@ -20,7 +17,7 @@ exports.createCommentReel = async (req, res) => {
         }
 
         const newComment = new commentReelModel({
-            user, //the person's id , who is going to comment something
+            user:req.user.userId , //the person's id , who is going to comment something
             content,
             tag,
             reply,
@@ -49,7 +46,7 @@ exports.updateCommentReel = async (req, res) => {
     try {
         const { content } = req.body;
         const commentId = req.params.id;
-        const user = req.body.id;
+        const user = req.user.userId;
 
         const checkUser = await userModel.findOne({ _id: user });
         if (!checkUser)
@@ -79,7 +76,7 @@ exports.updateCommentReel = async (req, res) => {
 exports.deleteCommentReel = async (req, res) => {
     try {
         const commentId = req.params.id;
-        const user = req.body.id;
+        const user = req.user.userId;
 
         const checkUser = await userModel.findOne({ _id: user });
         if (!checkUser)
@@ -111,7 +108,7 @@ exports.deleteCommentReel = async (req, res) => {
 exports.likeCommentReel = async (req, res) => {
     try {
         const commentId = req.params.id;
-        const user = req.body.id;
+        const user = req.user.userId;
 
         const checkUser = await userModel.findOne({ _id: user });
         if (!checkUser)
@@ -141,7 +138,7 @@ exports.likeCommentReel = async (req, res) => {
 exports.unlikeCommentReel = async (req, res) => {
     try {
         const commentId = req.params.id;
-        const user = req.body.id;
+        const user = req.user.userId;
 
         const checkUser = await userModel.findOne({ _id: user });
         if (!checkUser)

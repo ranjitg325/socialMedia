@@ -6,16 +6,12 @@ exports.createComment = async (req, res) => {
   try {
     const {
       postId,
-      user,
       content,
       tag,
       reply,
       likes,
       postUserId 
     } = req.body;
-    const userData = await userModel.findOne({ _id: user });
-    if (!userData)
-      return res.status(400).json({ msg: "User does not exist." });
 
     const post = await Posts.findById(postId);
     if (!post)
@@ -28,7 +24,7 @@ exports.createComment = async (req, res) => {
     }
 
     const newComment = new Comments({
-      user,   //the person's id , who is going to comment something
+      user: req.user.userId ,   //the person's id , who is going to comment something
       content,
       tag,
       reply,
@@ -56,7 +52,7 @@ exports.createComment = async (req, res) => {
     try {
       const { content } = req.body;
       const commentId = req.params.id;
-      const user = req.body.id;
+      const user = req.user.userId;
 
       const checkUser = await userModel.findOne({_id: user});
       if (!checkUser)
@@ -81,7 +77,7 @@ exports.createComment = async (req, res) => {
     try {
       const comment = await Comments.find({
         _id: req.params.id,  //_id = comment id
-        likes: req.body.id, // likes = user id
+        likes: req.user.userId // likes = user id
       });
       if (comment.length > 0)
         return res.status(400).json({ msg: "You already liked this post." });
@@ -89,7 +85,7 @@ exports.createComment = async (req, res) => {
       const like = await Comments.findOneAndUpdate(
         {  _id: req.params.id },
         {
-          $push: { likes: req.body.id },
+          $push: { likes: req.user.userId },
         },
         { new: true }
       );
@@ -105,7 +101,7 @@ exports.unLikeComment = async (req, res) => {
     const unlikeComment = await Comments.findOneAndUpdate(
       { _id: req.params.id },   //comment id
       {
-        $pull: { likes: req.body.id },   // id = user id
+        $pull: { likes: req.user.userId },   // id = user id
       },
       { new: true }
     );
@@ -119,7 +115,7 @@ exports.deleteComment= async (req, res) => {
   try {
     const comment = await Comments.findOneAndDelete({
       _id: req.params.id,
-      $or: [{ user: req.body.id }, { postUserId: req.body.id }],
+      $or: [{ user: req.user.userId }, { postUserId: req.user.userId }],
     });
 
      await Comments.deleteOne({_id:req.params.id});

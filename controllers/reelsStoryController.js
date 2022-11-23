@@ -9,10 +9,10 @@ const aws = require('../aws/aws');
 exports.createStory = async (req, res) => {
     try {
         if (req.files && req.files.length > 0) {
-        const { caption, user } = req.body;
+        const { caption } = req.body;
         let media = req.files;
-        const findUser = await userModel.findById(user);
-        if (!findUser) return res.status(400).json({ msg: 'User does not exist.' });
+        // const findUser = await userModel.findById(user);
+        // if (!findUser) return res.status(400).json({ msg: 'User does not exist.' });
 
         if (media && media.length > 0) {
             media = await aws.uploadFile(media[0]);
@@ -22,7 +22,7 @@ exports.createStory = async (req, res) => {
         }
 
         const newStory = await new storyModel({
-            user: user,
+            user: req.user.userId,
             media,
             caption,
         });
@@ -36,12 +36,12 @@ exports.createStory = async (req, res) => {
         res.status(201).send({ msg: 'Story created', data: newStory });
     }
     else {
-        const { caption, user } = req.body;
-        const findUser = await userModel.findById(user);
-        if (!findUser) return res.status(400).json({ msg: 'User does not exist.' });
+        const { caption } = req.body;
+        // const findUser = await userModel.findById(user);
+        // if (!findUser) return res.status(400).json({ msg: 'User does not exist.' });
 
         const newStory = await new storyModel({
-            user: user,
+            user: req.user.userId,
             caption,
         });
 

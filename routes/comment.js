@@ -2,16 +2,16 @@ const express = require('express');
 const router = express.Router();
 
 const commentController = require("../controllers/commentController");
-//const middleware = require("../middleware/authenticateUser");
+const middleware = require("../middleware/authenticateUser");
 
-router.post("/comment",  commentController.createComment);
+router.post("/comment", middleware.authenticateToken,  commentController.createComment);
 
-router.put("/comment/:id",  commentController.updateComment);
+router.put("/comment/:id",  middleware.authenticateToken, commentController.updateComment);
 
-router.patch("/likeComment/:id",  commentController.likeComment);
+router.patch("/likeComment/:id", middleware.authenticateToken,  commentController.likeComment);
 
-router.put("/unlikeComment/:id",  commentController.unLikeComment);
+router.put("/unlikeComment/:id", middleware.authenticateToken,  commentController.unLikeComment);
 
-router.delete("/comment/:id",  commentController.deleteComment);
+router.delete("/comment/:id", middleware.authenticateToken,  commentController.deleteComment);
 
 module.exports = router;

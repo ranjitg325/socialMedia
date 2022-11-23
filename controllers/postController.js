@@ -28,13 +28,13 @@ exports.createPost = async (req, res) => {
     if (!content) {
       return res.status(400).json({ msg: "Please write something to post." });
     }
-  if(req.files && req.files.length > 0){
-    images = await Promise.all(
-      req.files.map(async (file) => {
-        return await awsg.uploadToS3(file.buffer);
-      })
-    );
-  }
+    if(req.files && req.files.length > 0){
+      images = await Promise.all(
+        req.files.map(async (file) => {
+          return await awsg.uploadToS3(file.buffer);
+        })
+      );
+    }
 
     const newPost = new Posts({
       content,
@@ -152,11 +152,13 @@ exports.updatePost = async (req, res) => {
 //     return res.status(500).json({ msg: err.message });
 //   }
 // },
+
+
   exports.likePost = async (req, res) => {
     try {
       const post = await Posts.find({
         _id: req.params.id,
-        likes: req.body.id,
+        likes: req.user.userId,
       });
       if (post.length > 0)
         return res.status(400).json({ msg: "You already liked this post." });
@@ -164,7 +166,7 @@ exports.updatePost = async (req, res) => {
       const like = await Posts.findOneAndUpdate(
         { _id: req.params.id },  //post id
         {
-          $push: { likes: req.body.id },  //user id
+          $push: { likes: req.user.userId },  //user id
         },
         { new: true }
       );
@@ -177,12 +179,13 @@ exports.updatePost = async (req, res) => {
       return res.status(500).json({ msg: err.message });
     }
   }
+  
 exports.unLikePost = async (req, res) => {
   try {
     const like = await Posts.findOneAndUpdate(
       { _id: req.params.id },
       {
-        $pull: { likes: req.body.id },
+        $pull: { likes: req.user.userId },
       },
       { new: true }
     );
@@ -200,7 +203,7 @@ exports.supportPost = async (req, res) => {
   try {
     const post = await Posts.find({
       _id: req.params.id,  //post id
-      support: req.body._id,
+      support: req.user.userId,  //user id
     });
     if (post.length > 0)
       return res.status(400).json({ msg: "You already supported this post." });
@@ -208,7 +211,7 @@ exports.supportPost = async (req, res) => {
     const support = await Posts.findOneAndUpdate(
       { _id: req.params.id },  //post id
       {
-        $push: { support: req.body._id },  //user id
+        $push: { support: req.user.userId },  //user id
       },
       { new: true }
     );
@@ -227,7 +230,7 @@ exports.unSupportPost = async (req, res) => {
     const support = await Posts.findOneAndUpdate(
       { _id: req.params.id },
       {
-        $pull: { support: req.body._id },
+        $pull: { support: req.user.userId },
       },
       { new: true }
     );
@@ -290,7 +293,7 @@ exports.deletePost = async (req, res) => {
   try {
     const post = await Posts.findOneAndDelete({
       _id: req.params.id,
-      user: req.body.id,
+      user: req.user.userId,
     });
     await Comments.deleteMany({ _id: { $in: post.comments } });
 
@@ -308,14 +311,14 @@ exports.deletePost = async (req, res) => {
 exports.savePost = async (req, res) => {
   try {
     const user = await Users.find({
-      _id: req.body.id, //id= user id
+      _id: req.user.userId, //id= user id
       saved: req.params.id,  //id= post id
     });
     if (user.length > 0)
       return res.status(400).json({ msg: "You already saved this post." });
 
     const save = await Users.findOneAndUpdate(
-      { _id: req.body.id },
+      { _id: req.user.userId },
       {
         $push: { saved: req.params.id },
       },
@@ -333,7 +336,7 @@ exports.savePost = async (req, res) => {
 exports.unSavePost = async (req, res) => {
   try {
     const save = await Users.findOneAndUpdate(
-      { _id: req.body.id },
+      { _id: req.user.userId },
       {
         $pull: { saved: req.params.id },
       },
@@ -367,7 +370,7 @@ exports.unSavePost = async (req, res) => {
     try {
       const features = new APIfeatures(
         Users.find({
-          _id: { $in: req.body.id },
+          _id: { $in: req.user.userId },
         }).select("saved /*createdAt*/"),
         req.query
       ).paginating();
@@ -392,7 +395,7 @@ exports.reportPost = async (req, res) => {
       return res.status(400).json({ msg: "This post does not exist." });
     const report = await Posts.findOneAndUpdate(
       { _id: req.params.id },
-      { $push: { report: req.body.id }, $set: { isReported: true } },
+      { $push: { report: req.user.userId }, $set: { isReported: true } },
       { new: true }
     );
 
@@ -410,7 +413,7 @@ exports.unReportPost = async (req, res) => {
     const report = await Posts.findOneAndUpdate(
       { _id: req.params.id },
       {
-        $pull: { report: req.body.id }, $set: { isReported: false },
+        $pull: { report: req.user.userId }, $set: { isReported: false },
       },
       { new: true }
     );
@@ -428,10 +431,10 @@ exports.unReportPost = async (req, res) => {
 exports.sharePost = async (req, res) => {
   try {
     const user = await Users.find({
-      _id: req.body.id, //id= user id
+      _id: req.user.userId, //id= user id
       shared: req.params.id,  //id= post id
     });
-    const finduser = await Users.findById(req.body.id);
+    const finduser = await Users.findOne({_id: req.user.userId});
     if (!finduser) {
       return res.status(400).json({ msg: 'User not found' });
     }
@@ -442,7 +445,7 @@ exports.sharePost = async (req, res) => {
     // if (user.length > 0)
     //   return res.status(400).json({ msg: "You already shared this post." });
     const share = await Users.findOneAndUpdate(
-      { _id: req.body.id },
+      { _id: req.user.userId },
       {
         $push: { shared: req.params.id },
       },
@@ -460,7 +463,7 @@ exports.sharePost = async (req, res) => {
 
 exports.getMySharedPost = async (req, res) => {
   try {
-    const userId = req.body.id;
+    const userId = req.user.userId;
     const user = await Users.findOne({ _id: userId })
       .populate("shared");
 
@@ -476,7 +479,7 @@ exports.getMySharedPost = async (req, res) => {
 exports.deleteSharedPost = async (req, res) => {
   try {
     const share = await Users.findOneAndUpdate(
-      { _id: req.body.id }, //id= user id
+      { _id: req.user.userId }, //id= user id
       {
         $pull: { shared: req.params.id },  //id=  post id
       },
@@ -495,8 +498,8 @@ exports.deleteSharedPost = async (req, res) => {
 
 exports.newsFeed = async (req, res) => {
   try {
-    const { user } = req.body;
-    const findUser = await Users.findById(user);
+    const { user } = req.user.userId;
+    const findUser = await Users.findOne({_id: req.user.userId});
     if (!findUser) {
       return res.status(400).json({ msg: 'User not found' });
     }
