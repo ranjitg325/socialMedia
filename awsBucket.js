@@ -57,8 +57,8 @@ const uploadToS3 = (fileData) => {
                 console.log(err);
                 return reject(err);
             }
-            console.log(data);
-            return resolve(data);
+            console.log(data.Location);
+            return resolve(data.Location);
         });
     });
 };

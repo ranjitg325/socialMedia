@@ -8,4 +8,5 @@ router.post('/uploadReelStory',middleware.authenticateToken, reelStoryController
 router.get('/getStories',middleware.authenticateToken, reelStoryController.getStories);
 router.get('/getMyStories',middleware.authenticateToken, reelStoryController.getMyStories); //recheck
 router.delete('/deleteStory/:id',middleware.authenticateToken, reelStoryController.deleteStory); //recheck
+
 module.exports = router;

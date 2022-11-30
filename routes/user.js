@@ -26,7 +26,7 @@ router.get('/getFollowers', middleware.authenticateToken, userController.getFoll
 router.get('/getFollowing', middleware.authenticateToken, userController.getFollowing);
 router.get('/getFollowersCount',middleware.authenticateToken, userController.getFollowersCount);
 router.get('/getFollowingCount', middleware.authenticateToken, userController.getFollowingCount);
-//router.post('/sharePost/:id',userController.sharePost);   //not working
+
 //router.get('/getProfile',userController.getProfile);
 //block user
 router.patch('/blockUser/:id', middleware.authenticateToken,userController.blockUser);
@@ -34,5 +34,23 @@ router.patch('/unBlockUser/:id', middleware.authenticateToken, userController.un
 router.get('/getBlockedUsers', middleware.authenticateToken, userController.getBlockedUsers);
 router.get('/getBlockedUsersCount',middleware.authenticateToken, userController.getBlockedUsersCount);
 //router.get('/newsFeed',userController.getTimeline);
+
+//send friend request
+router.patch('/sendFriendRequest/:id', middleware.authenticateToken, userController.sendFriendRequest);
+router.patch('/cancelFriendRequest/:id', middleware.authenticateToken, userController.cancelFriendRequest);
+router.patch('/acceptFriendRequest/:id', middleware.authenticateToken, userController.acceptFriendRequest);
+//router.patch('/rejectFriendRequest/:id', middleware.authenticateToken, userController.rejectFriendRequest);
+router.get('/getFriendRequests', middleware.authenticateToken, userController.getFriendRequests);
+router.get('/getSentFriendRequests', middleware.authenticateToken, userController.getSentFriendRequests);
+router.get('/getFriends', middleware.authenticateToken, userController.getFriends);
+router.get('/getFriendsCount', middleware.authenticateToken, userController.getFriendsCount);
+router.get('/getFriendRequestsCount', middleware.authenticateToken, userController.getFriendRequestsCount);
+router.get('/getSentFriendRequestsCount', middleware.authenticateToken, userController.getSentFriendRequestsCount);
+router.get('/getMutualFriends/:id', middleware.authenticateToken, userController.getMutualFriends); //recheck not working properly
+router.patch('/unfriend/:id', middleware.authenticateToken, userController.unfriend);
+//router.patch('/removeFriendRequest/:id', middleware.authenticateToken, userController.removeFriendRequest);
+router.get('/getMutualFriendsCount/:id', middleware.authenticateToken, userController.getMutualFriendsCount); //not tested
+//pull friend request
+router.patch('/pullFriendRequest/:id', middleware.authenticateToken, userController.pullFriendRequest); //try when u have more friend
 
 module.exports = router;

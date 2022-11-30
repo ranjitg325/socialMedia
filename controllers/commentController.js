@@ -1,5 +1,6 @@
 const Comments = require("../models/commentModel.js");
 const Posts = require("../models/postModel");
+const pages = require("../models/pageModel.js");
 const userModel = require("../models/userModel");
 
 exports.createComment = async (req, res) => {
@@ -10,7 +11,7 @@ exports.createComment = async (req, res) => {
       tag,
       reply,
       likes,
-      postUserId 
+      //postUserId 
     } = req.body;
 
     const post = await Posts.findById(postId);
@@ -29,7 +30,7 @@ exports.createComment = async (req, res) => {
       tag,
       reply,
       likes,
-      postUserId,
+      //postUserId,
       postId,
     });
 
@@ -119,16 +120,30 @@ exports.deleteComment= async (req, res) => {
     });
 
      await Comments.deleteOne({_id:req.params.id});
+     //delete all the replies of the comment
+      //await Comments.deleteMany({reply:req.params.id});
 
+      //delete the comment from the post
+      await Posts.findOneAndUpdate(
+        { comments: req.params.id },
+        {
+          $pull: { comments: req.params.id },
+        },
+        { new: true }
+      );
+
+//delete the comment from the comment
    const deletedComment= await Posts.findOneAndUpdate(
       { id: comment },
       {
-        $pull: { comments: req.params.id },
-      },{new:true}
+        $pull: { comments: req.params.id  },
+      },
+      { new: true }
     );
-
+    
     res.json({ msg: "Deleted Comment!" , data :deletedComment});
   } catch (err) {
     return res.status(500).json({ msg: err.message });
   }
 }
+

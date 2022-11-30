@@ -56,7 +56,24 @@ const userSchema = new mongoose.Schema(
         following: [{ type: mongoose.Types.ObjectId, ref: "user" }],
         saved: [{ type: mongoose.Types.ObjectId, ref: "user" }],
         shared : [{ type: mongoose.Types.ObjectId, ref: "post" }],
+        //block user
         block : [{ type: mongoose.Types.ObjectId, ref: "user" }],
+       
+        // pendingFriendRequest: [{ type: mongoose.Types.ObjectId, ref: "user" }],
+        // acceptedFriendRequest: [{ type: mongoose.Types.ObjectId, ref: "user" }],
+        
+        //send friend request
+        friendRequest : [{ type: mongoose.Types.ObjectId, ref: "user" }],
+        //accept friend request
+         friends : [{ type: mongoose.Types.ObjectId, ref: "user" }],
+         //sent friend request record
+            sentRequest : [{ type: mongoose.Types.ObjectId, ref: "user" }],
+        // //cancel friend request
+        // cancelRequest : [{ type: mongoose.Types.ObjectId, ref: "user" }],
+        //   //unfriend
+        // unfriend : [{ type: mongoose.Types.ObjectId, ref: "user" }],
+        //newly added pages in schema, again create and recheck
+        pages: [{ type: mongoose.Types.ObjectId, ref: "page" }],
         isDeleted: {
             type: Boolean,
             default: false,

@@ -1,6 +1,11 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const multer = require('multer')
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const SocketServer = require("./socketServer");
+const { ExpressPeerServer } = require("peer");
+const path = require("path");
 
 const { default: mongoose } = require('mongoose');
 const app = express();
@@ -16,6 +21,8 @@ const commentReel = require('./routes/commentReel.js');
 const shareReel = require('./routes/shareReel.js');
 const reelsStory = require('./routes/reelsStory.js');
 const news = require('./routes/news.js');
+const page = require('./routes/page.js');
+const sharePage = require('./routes/sharePage.js');
 
 require('dotenv').config();
 // //const multer = require("multer")
@@ -23,6 +30,21 @@ require('dotenv').config();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(multer().any())
+app.use(express.json());
+app.use(cors());
+app.use(cookieParser());
+
+
+// Socket
+const http = require("http").createServer(app);
+const io = require("socket.io")(http);
+
+io.on("connection", (socket) => {
+  SocketServer(socket);
+});
+
+// Create peer server
+ExpressPeerServer(http, { path: "/" });
 
 
 mongoose.connect("mongodb+srv://sapna20:Sapnadha20@cluster0.crepr.mongodb.net/Project-socialMedia-db?retryWrites=true&w=majority", {
@@ -44,6 +66,8 @@ app.use('/commentReel', commentReel);
 app.use('/shareReel', shareReel);
 app.use('/reelsStory', reelsStory);
 app.use('/news', news);
+app.use('/page', page);
+app.use('/sharePage', sharePage);
 
 
 app.listen(process.env.PORT || 3000, function () {

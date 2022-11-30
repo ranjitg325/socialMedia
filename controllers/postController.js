@@ -1,9 +1,11 @@
 const Posts = require("../models/postModel");
 const Comments = require("../models/commentModel");
 const Users = require("../models/userModel");
+const Pages = require("../models/pageModel");
 const aws = require('../aws/aws');
 const awsg= require('../awsBucket');
 const postModel = require("../models/postModel");
+
 
 class APIfeatures {
   constructor(query, queryString) {
@@ -19,41 +21,77 @@ class APIfeatures {
     return this;
   }
 }
-
+//create post where a user can upload images, videos,text,location,hashtags and feelings also can mention other users in the post and mention other users using @
 exports.createPost = async (req, res) => {
   try {
-    const { content } = req.body;
+    const { content,feeling, feelingWith, hashtag, mention } = req.body;
     let images = req.files;
 
-    if (!content) {
-      return res.status(400).json({ msg: "Please write something to post." });
+    if (!content || !images) {
+      return res.status(400).json({ msg: "Please fill in all fields" });
     }
     if(req.files && req.files.length > 0){
-      images = await Promise.all(
-        req.files.map(async (file) => {
-          return await awsg.uploadToS3(file.buffer);
-        })
-      );
-    }
+            images = await Promise.all(
+              req.files.map(async (file) => {
+                return await awsg.uploadToS3(file.buffer);
+              })
+            );
+          }
 
     const newPost = new Posts({
       content,
       images,
+      location : {
+        coordinates: [parseFloat(req.body.longitude), parseFloat(req.body.latitude)],
+      },
+      feeling,
+      feelingWith,
+      hashtag,
+      mention,
       user: req.user.userId,
     });
-    await newPost.save();
 
-    res.status(201).send({
-      msg: "Created Post!",
-      newPost: {
-        ...newPost._doc,
-        user: req.user,
-      },
-    });
+    await newPost.save();
+     
+    res.status(201).send({ msg: "Post created", newPost });
   } catch (err) {
     return res.status(500).json({ msg: err.message });
   }
-},
+}
+// exports.createPost = async (req, res) => {
+//   try {
+//     const { content } = req.body;
+//     let images = req.files;
+
+//     if (!content) {
+//       return res.status(400).json({ msg: "Please write something to post." });
+//     }
+//     if(req.files && req.files.length > 0){
+//       images = await Promise.all(
+//         req.files.map(async (file) => {
+//           return await awsg.uploadToS3(file.buffer);
+//         })
+//       );
+//     }
+
+//     const newPost = new Posts({
+//       content,
+//       images,
+//       user: req.user.userId,
+//     });
+//     await newPost.save();
+
+//     res.status(201).send({
+//       msg: "Created Post!",
+//       newPost: {
+//         ...newPost._doc,
+//         user: req.user,
+//       },
+//     });
+//   } catch (err) {
+//     return res.status(500).json({ msg: err.message });
+//   }
+// },
   exports.getPostsOfOwn = async (req, res) => {
     try {
       const features = new APIfeatures(Posts.find({ user: req.user.userId }), req.query)
@@ -167,6 +205,7 @@ exports.updatePost = async (req, res) => {
         { _id: req.params.id },  //post id
         {
           $push: { likes: req.user.userId },  //user id
+          $inc: { likesCount: 1 },
         },
         { new: true }
       );
@@ -186,6 +225,7 @@ exports.unLikePost = async (req, res) => {
       { _id: req.params.id },
       {
         $pull: { likes: req.user.userId },
+        $inc: { likesCount: -1 },
       },
       { new: true }
     );
@@ -212,6 +252,7 @@ exports.supportPost = async (req, res) => {
       { _id: req.params.id },  //post id
       {
         $push: { support: req.user.userId },  //user id
+        $inc: { supportsCount: 1 },
       },
       { new: true }
     );
@@ -231,6 +272,7 @@ exports.unSupportPost = async (req, res) => {
       { _id: req.params.id },
       {
         $pull: { support: req.user.userId },
+        $inc: { supportsCount: -1 },
       },
       { new: true }
     );
@@ -427,35 +469,36 @@ exports.unReportPost = async (req, res) => {
   }
 }
 
-//share post to my timeline
+
 exports.sharePost = async (req, res) => {
   try {
-    const user = await Users.find({
-      _id: req.user.userId, //id= user id
-      shared: req.params.id,  //id= post id
-    });
-    const finduser = await Users.findOne({_id: req.user.userId});
-    if (!finduser) {
-      return res.status(400).json({ msg: 'User not found' });
-    }
-    const findPost = await Posts.findById(req.params.id);
-    if (!findPost) {
-      return res.status(400).json({ msg: 'post not found' });
-    }
-    // if (user.length > 0)
-    //   return res.status(400).json({ msg: "You already shared this post." });
-    const share = await Users.findOneAndUpdate(
-      { _id: req.user.userId },
+    const post = await Posts.findOne({ _id: req.params.id });
+    if (!post)
+      return res.status(400).json({ msg: "This post does not exist." });
+     
+      const share1 = await Users.findOneAndUpdate(
+        { _id: req.user.userId },
+        {
+          $push: { shared: req.params.id },
+        },
+        { new: true }
+      );
+
+      const share = await Posts.findOneAndUpdate( 
+      { _id: req.params.id },
       {
-        $push: { shared: req.params.id },
+        $push: { shares: req.user.userId },
+        $inc: { sharesCount: 1 },
       },
       { new: true }
     );
+    if (!share1)
+    return res.status(400).json({ msg: "This user does not exist." });
 
     if (!share)
-      return res.status(400).json({ msg: "This user does not exist." });
+      return res.status(400).json({ msg: "This post does not exist." });
 
-    res.status(200).send({ msg: "Shared Post", data: share });
+    res.status(200).send({ msg: "Post Shared", data: share });
   } catch (err) {
     return res.status(500).json({ msg: err.message });
   }
@@ -495,27 +538,83 @@ exports.deleteSharedPost = async (req, res) => {
   }
 }
 
-
-exports.newsFeed = async (req, res) => {
+//show the timeline for the user who is logged in, show the posts of that whom user is following, have friends, and have shared posts and the pages that user is joined
+exports.getTimelinePost  = async (req, res) => {
   try {
-    const { user } = req.user.userId;
-    const findUser = await Users.findOne({_id: req.user.userId});
-    if (!findUser) {
+     const userId = req.body.userId;
+    const user = await Users.findOne({  _id: userId })
+    if (!user) {
       return res.status(400).json({ msg: 'User not found' });
     }
-    const allPostOfFollowing = await Posts.find({ user: { $in: findUser.following } })
-      .populate("user", "avatar username fullname followers following")
-      .sort("-createdAt");
-    const allSharedPostOfFollowing = await Users.find({ _id: { $in: findUser.following } })
-      .populate("shared", "user likes comments createdAt")
-      .select("shared")
-      .sort("-createdAt");
-
-    const allPost = [...allPostOfFollowing, ...allSharedPostOfFollowing];
+   //show the posts of that whom user is following in following array of users schema, then show all the posts of that user
+    const followingInUsersSchema = await Users.find({ _id: { $in: user.following } })
+  //show all the posts of that user who is in following array of users schema
+    const followingPosts = await Posts.find({ user: { $in: followingInUsersSchema } })
+    //show the posts of all friends of that user who is in friends array of users schema
+    const friendsInUsersSchema = await Users.find({ _id: { $in: user.friends } })
+    const friendsPosts = await Posts.find({ user: { $in: friendsInUsersSchema } })
+    //show the posts of all pages that user is joined in pages array of users schema
+    const pagesInUsersSchema = await Pages.find({ _id: { $in: user.pages } })
+    const pagesPosts = await Posts.find({ page: { $in: pagesInUsersSchema } })
+    //show the posts of all shared posts of that user who is in shared array of users schema  
+    const sharedInUsersSchema = await Users.find({ _id: { $in: user.shared } })
+    const sharedPosts = await Posts.find({ user: { $in: sharedInUsersSchema } })
+    //show all the post of followingPosts,friendsPosts,pagesPosts,sharedPosts in one array and sort by -createdAt
+    const allPosts = [...followingPosts, ...friendsPosts, ...pagesPosts, ...sharedPosts].sort((p1, p2) => {
+      return new Date(p2.createdAt) - new Date(p1.createdAt);
+    });
     res.status(200).json({
       msg: "Success!",
-      //result: allPost.length,
-      data: allPost,
+      length: allPosts.length,
+      allPosts,
+    });
+  }
+catch (err) {
+    return res.status(500).json({ msg: err.message });
+  }
+}
+
+//show the timeline for the user who is logged in but the user does not have friends,pages,shared posts, and following, so show the posts of all users near the user
+exports.getTimelinePostWithoutFriends = async (req, res) => {
+  try {
+    const userId = req.body.userId;
+    const user = await Users.findOne({  _id: userId })
+    if (!user) {
+      return res.status(400).json({ msg: 'User not found' });
+    }
+    //show the posts of all users near the user
+    const allUsers = await Users.find({ _id: { $ne: user._id } })
+    const allUsersPosts = await Posts.find({ user: { $in: allUsers } })
+    //show all the post of allUsersPosts in one array and sort by -createdAt
+    const allPosts = [...allUsersPosts].sort((p1, p2) => {
+      return new Date(p2.createdAt) - new Date(p1.createdAt);
+    }
+    );
+    res.status(200).json({
+      msg: "Success!",
+      length: allPosts.length,
+      allPosts,
+    });
+  }
+  catch (err) {
+    return res.status(500).json({ msg: err.message });
+  }
+}
+
+
+//search post by using symbol # and show the posts that have the same symbol
+exports.searchPostByHashTag = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const user = await Users.findOne({  _id: userId })
+    if (!user) {
+      return res.status(400).json({ msg: 'User not found' });
+    }
+    const posts = await Posts.find({ hashtag : { $regex: req.query.hashtag, $options: "i" } })
+    res.status(200).json({
+      msg: "Success!",
+      length: posts.length,
+      posts,
     });
   }
   catch (err) {

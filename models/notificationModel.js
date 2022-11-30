@@ -2,13 +2,13 @@ const mongoose = require("mongoose");
 
 const notifySchema = new mongoose.Schema(
   {
-    //id: mongoose.Types.ObjectId,
+    id: mongoose.Types.ObjectId,
     user: { type: mongoose.Types.ObjectId, ref: "user" },
     recipients: [mongoose.Types.ObjectId],
     url: String,
     text: String,
     content: String,
-    image: String,
+    image: Array,
     isRead: { type: Boolean, default: false },
   },
   {

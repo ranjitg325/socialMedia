@@ -5,11 +5,11 @@ const middleware = require("../middleware/authenticateUser");
 
 router.post("/notify", middleware.authenticateToken, notificationController.createNotify);
 
-router.delete("/removeNotify",middleware.authenticateToken,  notificationController.removeNotify);
+router.delete("/notify/:id",middleware.authenticateToken,  notificationController.removeNotify);
 
-router.get("/getNotifies", middleware.authenticateToken, notificationController.getNotifies);
+router.get("/notifies", middleware.authenticateToken, notificationController.getNotifies);
 
-router.patch("/isReadNotify",middleware.authenticateToken,  notificationController.isReadNotify);
+router.patch("/isReadNotify/:id",middleware.authenticateToken,  notificationController.isReadNotify);
 
 router.delete("/deleteAllNotify", middleware.authenticateToken, notificationController.deleteAllNotifies);
 module.exports = router;

@@ -1,13 +1,21 @@
 const Notifies = require("../models/notificationModel");
-
+const aws= require('../awsBucket');
 
   exports.createNotify=async (req, res) => {
     try {
-      const {recipients, url, text, content, image } = req.body;
+      const {id,recipients, url, text, content } = req.body;
+      if (recipients.includes(req.user.userId.toString())) return;
 
-      //if (recipients.includes(req.body._id.toString())) return;
-
+      let image = req.files;
+      if(req.files && req.files.length > 0){
+        image = await Promise.all(
+          req.files.map(async (file) => {
+            return await aws.uploadToS3(file.buffer);
+          })
+        );
+      }
       const notify = new Notifies({
+        id,
         recipients,
         url,
         text,
@@ -26,8 +34,8 @@ const Notifies = require("../models/notificationModel");
   exports.removeNotify= async (req, res) => {
     try {
       const notify = await Notifies.findOneAndDelete({
-        _id: req.user.userId,
-       // url: req.body.url,
+        id: req.params.id,
+        url: req.query.url,
       });
 
       return res.status(200).send({ data : notify });
@@ -49,7 +57,7 @@ const Notifies = require("../models/notificationModel");
   exports.isReadNotify= async (req, res) => {
     try {
       const notifies = await Notifies.findOneAndUpdate(
-        { _id: req.user.userId, },
+        { _id: req.params.id },
         {
           isRead: true,
         }

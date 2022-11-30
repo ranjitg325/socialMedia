@@ -10,7 +10,7 @@ router.put("/comment/:id",  middleware.authenticateToken, commentController.upda
 
 router.patch("/likeComment/:id", middleware.authenticateToken,  commentController.likeComment);
 
-router.put("/unlikeComment/:id", middleware.authenticateToken,  commentController.unLikeComment);
+router.patch("/unlikeComment/:id", middleware.authenticateToken,  commentController.unLikeComment);
 
 router.delete("/comment/:id", middleware.authenticateToken,  commentController.deleteComment);
 
