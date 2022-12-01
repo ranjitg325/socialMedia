@@ -16,7 +16,7 @@ router.put('/saveReel/:id',middleware.authenticateToken, reelController.saveReel
 router.put('/unsaveReel/:id', middleware.authenticateToken,reelController.unsaveReel);
 router.get('/getSavedReels',middleware.authenticateToken, reelController.getSavedReels);
 router.get('/getUserReels/:id',middleware.authenticateToken, reelController.getUserReels);
-router.put('/shareReel/:id',middleware.authenticateToken, reelController.shareReel); //recheck this
+router.put('/shareReel/:id',middleware.authenticateToken, reelController.shareReel); 
 router.put('/reportReel/:id', middleware.authenticateToken,reelController.reportReel);
 router.get('/getReportedReels', middleware.authenticateToken,reelController.getReportedReels);
 

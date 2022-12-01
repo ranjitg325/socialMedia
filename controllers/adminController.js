@@ -30,8 +30,7 @@ exports.admin_login = async (req, res) => {
                 return res.status(400).send({ message: "Invalid Password" });
             };
             let payload = { userId: _id, email: adminEmail };
-            // const generatedToken = jwt.sign(payload,"sports-e-commerce",{expiresIn:'10080m'}); //i cut this line becoz error occurs "invalid signature"
-            const generatedToken = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
+              const generatedToken = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
                 expiresIn: "10080m",
             });
             res.header("jwt-token", generatedToken);

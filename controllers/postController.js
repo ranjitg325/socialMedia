@@ -3,7 +3,7 @@ const Comments = require("../models/commentModel");
 const Users = require("../models/userModel");
 const Pages = require("../models/pageModel");
 const aws = require('../aws/aws');
-const awsg= require('../awsBucket');
+const awsg = require('../awsBucket');
 const postModel = require("../models/postModel");
 
 
@@ -21,27 +21,27 @@ class APIfeatures {
     return this;
   }
 }
-//create post where a user can upload images, videos,text,location,hashtags and feelings also can mention other users in the post and mention other users using @
+
 exports.createPost = async (req, res) => {
   try {
-    const { content,feeling, feelingWith, hashtag, mention } = req.body;
+    const { content, feeling, feelingWith, hashtag, mention } = req.body;
     let images = req.files;
 
-    if (!content || !images) {
-      return res.status(400).json({ msg: "Please fill in all fields" });
+    if (!content && !images) {
+      return res.status(400).json({ msg: "Please give either content or image" });
     }
-    if(req.files && req.files.length > 0){
-            images = await Promise.all(
-              req.files.map(async (file) => {
-                return await awsg.uploadToS3(file.buffer);
-              })
-            );
-          }
+    if (req.files && req.files.length > 0) {
+      images = await Promise.all(
+        req.files.map(async (file) => {
+          return await awsg.uploadToS3(file.buffer);
+        })
+      );
+    }
 
     const newPost = new Posts({
       content,
       images,
-      location : {
+      location: {
         coordinates: [parseFloat(req.body.longitude), parseFloat(req.body.latitude)],
       },
       feeling,
@@ -52,7 +52,7 @@ exports.createPost = async (req, res) => {
     });
 
     await newPost.save();
-     
+
     res.status(201).send({ msg: "Post created", newPost });
   } catch (err) {
     return res.status(500).json({ msg: err.message });
@@ -92,29 +92,29 @@ exports.createPost = async (req, res) => {
 //     return res.status(500).json({ msg: err.message });
 //   }
 // },
-  exports.getPostsOfOwn = async (req, res) => {
-    try {
-      const features = new APIfeatures(Posts.find({ user: req.user.userId }), req.query)
-        .paginating();
-      const posts = await features.query.sort("-createdAt").populate(
-        "user likes",
-        "avatar username fullname followers following"
-      ).populate({
-        path: "comments",
-        populate: {
-          path: "user likes",
-          select: "-password",
-        },
-      });
-      res.status(200).send({
-        status: "success",
-        result: posts.length,
-        posts: posts,
-      });
-    } catch (err) {
-      return res.status(500).json({ msg: err.message });
-    }
+exports.getPostsOfOwn = async (req, res) => {
+  try {
+    const features = new APIfeatures(Posts.find({ user: req.user.userId }), req.query)
+      .paginating();
+    const posts = await features.query.sort("-createdAt").populate(
+      "user likes",
+      "avatar username fullname followers following"
+    ).populate({
+      path: "comments",
+      populate: {
+        path: "user likes",
+        select: "-password",
+      },
+    });
+    res.status(200).send({
+      status: "success",
+      result: posts.length,
+      posts: posts,
+    });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
   }
+}
 
 exports.updatePost = async (req, res) => {
   try {
@@ -124,101 +124,69 @@ exports.updatePost = async (req, res) => {
     if (!content) {
       return res.status(400).json({ msg: "Please write something to post." });
     }
-  if(req.files && req.files.length > 0){
-    images = await Promise.all(
-      req.files.map(async (file) => {
-        return await awsg.uploadToS3(file.buffer);
-      })
-    );
-  }
-
-  const updatedPost = await Posts.findOneAndUpdate(
-    { _id: req.params.id }, //post id
-    {
-      content,
-      images,
-      user : req.user.userId,
-    },
-    { new: true }
-  );
-
-  if (!updatedPost)
-    return res.status(400).json({ msg: "This post does not exist." });
-
-  res.status(200).send({
-    msg: "Updated Post!",
-    newPost: {
-      ...updatedPost,
-      content,
-      images,
-    },
-  });
-} catch (err) {
-  return res.status(500).json({ msg: err.message });
-}
-}
-
-// exports.updatePost = async (req, res) => {
-//   try {
-//     const { content, images } = req.body;
-
-//     const post = await Posts.findOneAndUpdate(
-//       { _id: req.body.id },  //id=post id
-//       {
-//         content,
-//         images,
-//       }
-//     )
-//       .populate("user likes", "avatar username fullname")
-//       .populate({
-//         path: "comments",
-//         populate: {
-//           path: "user likes",
-//           select: "-password",
-//         },
-//       });
-
-//     res.status(200).send({
-//       msg: "Updated Post!",
-//       newPost: {
-//         ...post,
-//         content,
-//         images,
-//       },
-//     });
-//   } catch (err) {
-//     return res.status(500).json({ msg: err.message });
-//   }
-// },
-
-
-  exports.likePost = async (req, res) => {
-    try {
-      const post = await Posts.find({
-        _id: req.params.id,
-        likes: req.user.userId,
-      });
-      if (post.length > 0)
-        return res.status(400).json({ msg: "You already liked this post." });
-
-      const like = await Posts.findOneAndUpdate(
-        { _id: req.params.id },  //post id
-        {
-          $push: { likes: req.user.userId },  //user id
-          $inc: { likesCount: 1 },
-        },
-        { new: true }
+    if (req.files && req.files.length > 0) {
+      images = await Promise.all(
+        req.files.map(async (file) => {
+          return await awsg.uploadToS3(file.buffer);
+        })
       );
-
-      if (!like)
-        return res.status(400).json({ msg: "This post does not exist." });
-
-      res.status(200).send({ msg: "Liked Post!", data: like });
-    } catch (err) {
-      return res.status(500).json({ msg: err.message });
     }
+
+    const updatedPost = await Posts.findOneAndUpdate(
+      { _id: req.params.id }, //post id
+      {
+        content,
+        images,
+        user: req.user.userId,
+      },
+      { new: true }
+    );
+
+    if (!updatedPost)
+      return res.status(400).json({ msg: "This post does not exist." });
+
+    res.status(200).send({
+      msg: "Updated Post!",
+      newPost: {
+        ...updatedPost,
+        content,
+        images,
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
   }
-  
+}
+
+
+
+exports.likePost = async (req, res) => {
+  try {
+    const post = await Posts.find({
+      _id: req.params.id,
+      likes: req.user.userId,
+    });
+    if (post.length > 0)
+      return res.status(400).json({ msg: "You already liked this post." });
+
+    const like = await Posts.findOneAndUpdate(
+      { _id: req.params.id },  //post id
+      {
+        $push: { likes: req.user.userId },  //user id
+        $inc: { likesCount: 1 },
+      },
+      { new: true }
+    );
+
+    if (!like)
+      return res.status(400).json({ msg: "This post does not exist." });
+
+    res.status(200).send({ msg: "Liked Post!", data: like });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
+  }
+}
+
 exports.unLikePost = async (req, res) => {
   try {
     const like = await Posts.findOneAndUpdate(
@@ -302,35 +270,8 @@ exports.getUserPosts = async (req, res) => {
     return res.status(500).json({ msg: err.message });
   }
 }
-// exports.newsFeed= async (req, res) => {
-//   try {
-//     const features = new APIfeatures(
-//       Posts.find({
-//         user: [ req.body.user, ...req.body.following ],
-//       }),
-//       req.query
-//     ).paginating();
 
-//     const posts = await features.query
-//       .sort("-createdAt")
-//       .populate("user likes", "avatar username fullname followers")
-//       .populate({
-//         path: "comments",
-//         populate: {
-//           path: "user likes",
-//           select: "-password",
-//         },
-//       });
 
-//     res.json({
-//       msg: "Success!",
-//       result: posts.length,
-//       posts,
-//     });
-//   } catch (err) {
-//     return res.status(500).json({ msg: err.message });
-//   }
-// }
 exports.deletePost = async (req, res) => {
   try {
     const post = await Posts.findOneAndDelete({
@@ -392,41 +333,28 @@ exports.unSavePost = async (req, res) => {
   } catch (err) {
     return res.status(500).json({ msg: err.message });
   }
-},
-  // exports.getSavePost= async (req, res) => {
-  //   try {
-  //     const userId = req.body.id;
-  //     const user = await Users.findOne({_id:userId})
-  //      .populate("saved");
+}
 
-  //     res.json({
-  //       msg: "Success!",
-  //       result: user.length,
-  //       savePosts: user,
-  //     });
-  //   } catch (err) {
-  //     return res.status(500).json({ msg: err.message });
-  //   }
-  // }
-  exports.getSavePost = async (req, res) => {
-    try {
-      const features = new APIfeatures(
-        Users.find({
-          _id: { $in: req.user.userId },
-        }).select("saved /*createdAt*/"),
-        req.query
-      ).paginating();
 
-      const savePosts = await features.query.sort("-createdAt");
+exports.getSavePost = async (req, res) => {
+  try {
+    const features = new APIfeatures(
+      Users.find({
+        _id: { $in: req.user.userId },
+      }).select("saved /*createdAt*/"),
+      req.query
+    ).paginating();
 
-      res.status(200).send({
-        result: savePosts.length,
-        savePosts
-      });
-    } catch (err) {
-      return res.status(500).json({ msg: err.message });
-    }
+    const savePosts = await features.query.sort("-createdAt");
+
+    res.status(200).send({
+      result: savePosts.length,
+      savePosts
+    });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
   }
+}
 
 exports.reportPost = async (req, res) => {
   try {
@@ -475,16 +403,16 @@ exports.sharePost = async (req, res) => {
     const post = await Posts.findOne({ _id: req.params.id });
     if (!post)
       return res.status(400).json({ msg: "This post does not exist." });
-     
-      const share1 = await Users.findOneAndUpdate(
-        { _id: req.user.userId },
-        {
-          $push: { shared: req.params.id },
-        },
-        { new: true }
-      );
 
-      const share = await Posts.findOneAndUpdate( 
+    const share1 = await Users.findOneAndUpdate(
+      { _id: req.user.userId },
+      {
+        $push: { shared: req.params.id },
+      },
+      { new: true }
+    );
+
+    const share = await Posts.findOneAndUpdate(
       { _id: req.params.id },
       {
         $push: { shares: req.user.userId },
@@ -493,7 +421,7 @@ exports.sharePost = async (req, res) => {
       { new: true }
     );
     if (!share1)
-    return res.status(400).json({ msg: "This user does not exist." });
+      return res.status(400).json({ msg: "This user does not exist." });
 
     if (!share)
       return res.status(400).json({ msg: "This post does not exist." });
@@ -538,28 +466,21 @@ exports.deleteSharedPost = async (req, res) => {
   }
 }
 
-//show the timeline for the user who is logged in, show the posts of that whom user is following, have friends, and have shared posts and the pages that user is joined
-exports.getTimelinePost  = async (req, res) => {
+exports.getTimelinePost = async (req, res) => {
   try {
-     const userId = req.body.userId;
-    const user = await Users.findOne({  _id: userId })
+    const userId = req.user.userId;
+    const user = await Users.findOne({ _id: userId })
     if (!user) {
       return res.status(400).json({ msg: 'User not found' });
     }
-   //show the posts of that whom user is following in following array of users schema, then show all the posts of that user
     const followingInUsersSchema = await Users.find({ _id: { $in: user.following } })
-  //show all the posts of that user who is in following array of users schema
     const followingPosts = await Posts.find({ user: { $in: followingInUsersSchema } })
-    //show the posts of all friends of that user who is in friends array of users schema
     const friendsInUsersSchema = await Users.find({ _id: { $in: user.friends } })
     const friendsPosts = await Posts.find({ user: { $in: friendsInUsersSchema } })
-    //show the posts of all pages that user is joined in pages array of users schema
     const pagesInUsersSchema = await Pages.find({ _id: { $in: user.pages } })
     const pagesPosts = await Posts.find({ page: { $in: pagesInUsersSchema } })
-    //show the posts of all shared posts of that user who is in shared array of users schema  
     const sharedInUsersSchema = await Users.find({ _id: { $in: user.shared } })
     const sharedPosts = await Posts.find({ user: { $in: sharedInUsersSchema } })
-    //show all the post of followingPosts,friendsPosts,pagesPosts,sharedPosts in one array and sort by -createdAt
     const allPosts = [...followingPosts, ...friendsPosts, ...pagesPosts, ...sharedPosts].sort((p1, p2) => {
       return new Date(p2.createdAt) - new Date(p1.createdAt);
     });
@@ -569,23 +490,23 @@ exports.getTimelinePost  = async (req, res) => {
       allPosts,
     });
   }
-catch (err) {
+  catch (err) {
     return res.status(500).json({ msg: err.message });
   }
 }
 
-//show the timeline for the user who is logged in but the user does not have friends,pages,shared posts, and following, so show the posts of all users near the user
+
 exports.getTimelinePostWithoutFriends = async (req, res) => {
   try {
-    const userId = req.body.userId;
-    const user = await Users.findOne({  _id: userId })
+    const userId = req.user.userId;
+    const user = await Users.findOne({ _id: userId })
     if (!user) {
       return res.status(400).json({ msg: 'User not found' });
     }
-    //show the posts of all users near the user
+
     const allUsers = await Users.find({ _id: { $ne: user._id } })
     const allUsersPosts = await Posts.find({ user: { $in: allUsers } })
-    //show all the post of allUsersPosts in one array and sort by -createdAt
+
     const allPosts = [...allUsersPosts].sort((p1, p2) => {
       return new Date(p2.createdAt) - new Date(p1.createdAt);
     }
@@ -602,15 +523,15 @@ exports.getTimelinePostWithoutFriends = async (req, res) => {
 }
 
 
-//search post by using symbol # and show the posts that have the same symbol
+
 exports.searchPostByHashTag = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const user = await Users.findOne({  _id: userId })
+    const user = await Users.findOne({ _id: userId })
     if (!user) {
       return res.status(400).json({ msg: 'User not found' });
     }
-    const posts = await Posts.find({ hashtag : { $regex: req.query.hashtag, $options: "i" } })
+    const posts = await Posts.find({ hashtag: { $regex: req.query.hashtag, $options: "i" } })
     res.status(200).json({
       msg: "Success!",
       length: posts.length,

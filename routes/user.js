@@ -2,8 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const userController = require('../controllers/userController');
-const middleware = require("../middleware/authenticateUser");  //_id: req.user.userId
-
+const middleware = require("../middleware/authenticateUser"); 
 
 router.post('/userCreate', userController.user_signup);
 router.post('/email_otp', userController.send_otp_toEmail);
@@ -33,7 +32,6 @@ router.patch('/blockUser/:id', middleware.authenticateToken,userController.block
 router.patch('/unBlockUser/:id', middleware.authenticateToken, userController.unblockUser);
 router.get('/getBlockedUsers', middleware.authenticateToken, userController.getBlockedUsers);
 router.get('/getBlockedUsersCount',middleware.authenticateToken, userController.getBlockedUsersCount);
-//router.get('/newsFeed',userController.getTimeline);
 
 //send friend request
 router.patch('/sendFriendRequest/:id', middleware.authenticateToken, userController.sendFriendRequest);
@@ -46,11 +44,10 @@ router.get('/getFriends', middleware.authenticateToken, userController.getFriend
 router.get('/getFriendsCount', middleware.authenticateToken, userController.getFriendsCount);
 router.get('/getFriendRequestsCount', middleware.authenticateToken, userController.getFriendRequestsCount);
 router.get('/getSentFriendRequestsCount', middleware.authenticateToken, userController.getSentFriendRequestsCount);
-router.get('/getMutualFriends/:id', middleware.authenticateToken, userController.getMutualFriends); //recheck not working properly
+router.get('/getMutualFriends/:id', middleware.authenticateToken, userController.getMutualFriends);
 router.patch('/unfriend/:id', middleware.authenticateToken, userController.unfriend);
-//router.patch('/removeFriendRequest/:id', middleware.authenticateToken, userController.removeFriendRequest);
-router.get('/getMutualFriendsCount/:id', middleware.authenticateToken, userController.getMutualFriendsCount); //not tested
-//pull friend request
-router.patch('/pullFriendRequest/:id', middleware.authenticateToken, userController.pullFriendRequest); //try when u have more friend
+router.get('/getMutualFriendsCount/:id', middleware.authenticateToken, userController.getMutualFriendsCount); 
+//pull sent friend request
+router.patch('/pullFriendRequest/:id', middleware.authenticateToken, userController.pullFriendRequest); 
 
 module.exports = router;

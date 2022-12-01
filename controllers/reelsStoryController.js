@@ -5,7 +5,7 @@ const storyModel = require('../models/reelsStoryModel');
 const commentModel = require('../models/commentModel');
 const aws = require('../aws/aws');
 
-//if story wants to delete from database then use this code, or if just want to change the status i.e isDeleted: true, then use the alternate code given below
+
 exports.createStory = async (req, res) => {
     try {
         if (req.files && req.files.length > 0) {
@@ -96,23 +96,23 @@ exports.createStory = async (req, res) => {
 //     }
 // }
 
-//get all reels of whom i follow
+
 exports.getStories = async (req, res) => {
     try {
-        const { user } = req.body;
+        const user = req.user.userId;
         const findUser = await userModel.findById(user);
         if (!findUser) return res.status(400).json({ msg: 'User does not exist.' });
-
-        const stories = await storyModel.find({ user: { $in: findUser.following }, isDeleted: false }).sort({ createdAt: -1 }).populate('user', 'username avatar').select('-likes -comments');
-        res.status(200).send({ msg: 'Stories fetched', data: stories });
+        const reels = await storyModel.find({ user: { $in: [...findUser.following, ...findUser.friends, ...findUser.pages] }, isDeleted: false })
+        res.status(200).send({ msg: 'Reels fetched', data: reels });
     } catch (err) {
         return res.status(500).send({ msg: err.message });
     }
 }
 
+
 exports.getMyStories = async (req, res) => {
     try {
-        const { user } = req.body;
+        const user = req.user.userId;
         const findUser = await userModel.findById(user);
         if (!findUser) return res.status(400).json({ msg: 'User does not exist.' });
 
@@ -124,20 +124,20 @@ exports.getMyStories = async (req, res) => {
 }
 
 
+//delete my story
 exports.deleteStory = async (req, res) => {
     try {
-        const { id } = req.params; //id =story id
-        const { user } = req.body;
+        const user = req.user.userId;
         const findUser = await userModel.findById(user);
         if (!findUser) return res.status(400).json({ msg: 'User does not exist.' });
 
-        const story = await storyModel.findById(id);
+        const story = await storyModel.findById(req.params.id);
         if (!story) return res.status(400).json({ msg: 'Story does not exist.' });
 
-        if (story.user.toString() !== user) return res.status(400).json({ msg: 'You are not allowed to delete this story.' });
+        if (story.user.toString() !== user) return res.status(400).json({ msg: 'You are not authorized to delete this story.' });
 
-        await storyModel.findOneAndDelete({ _id: id });
-        res.status(200).send({ msg: 'Story deleted' });
+       const deletedStory= await storyModel.findOneAndDelete({ _id: req.params.id });
+        res.status(200).send({ msg: 'Story deleted', data: deletedStory });
     } catch (err) {
         return res.status(500).send({ msg: err.message });
     }

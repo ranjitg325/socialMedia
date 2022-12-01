@@ -205,7 +205,7 @@ exports.updateGroupName = async (req, res) => {
     return res.status(500).json({ msg: err.message });
   }
 }
-//show only group memebers using select
+
 exports.getGroupMembers = async (req, res) => {
   try {
     const group = await Conversations.findOne({
@@ -295,7 +295,6 @@ exports.addMemberToGroup = async (req, res) => {
       if(!req.user.userId)
       return res.status(400).json({ msg: "creater id required" });
 
-//if user is already added  
     const group = await Conversations.findOne({
       _id: req.params.id,
       isGroup: true,
@@ -327,7 +326,6 @@ exports.removeMemberFromGroup = async (req, res) => {
       if(!req.user.userId)
       return res.status(400).json({ msg: "creater id required" });
 
-//if user is already added  
     const group = await Conversations.findOne({
       _id: req.params.id,
       isGroup: true,

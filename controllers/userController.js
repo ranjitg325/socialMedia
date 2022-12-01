@@ -10,81 +10,8 @@ const middleware = require("../middleware/authenticateUser");
 //const aws = require('../awsBucket')
 
 
-// exports.user_signup = async function (req, res) {
-//     try {
-//         let {
-//             fullname,
-//             username,
-//             //email,
-//             password,
-//             //avatar,
-//             gender,
-//             phoneNumber,
-//             address,
-//             story,
-//             followers,
-//             following
-//         } = req.body;
-//         const { email } = req.body
-//         let profileImage = req.files;
-//        // let email = req.body.email;
-//         // if (!email) {
-//         //     return res.status(400).send({ status: false, msg: " Email is required" })
-//         // }
-//         // const isValidEmail = emailValidator.isEmail(email)
-//         // if (!isValidEmail) {
-//         //     return res.status(400).send({ status: false, msg: " invalid email" })
-//         // }
-//         // const dataExist = await userModel.findOne({ email: email });
-//         // if (dataExist) {
-//         //     return res.status(400).send({ message: "email already in use" });
-//         // }
-//         if(!email){
-//             return res.status(400).send({ status: false, msg: " email is required" })
-//         }
-
-//         let validemail = await userModel.findOne({ email :email })
-//         if (validemail) {
-//             return res.status(400).send({ status: false, msg: "email id is already exist" })
-//         }
-
-//         const isValidEmail = emailValidator.isEmail(email)
-//         if (!isValidEmail) {
-//              return res.status(400).send({ status: false, msg: " invalid email" })
-//         }
-//         if (profileImage && profileImage.length > 0) {
-//             profileImage = await aws.uploadFile(profileImage[0]);
-//             }
-//             // else {
-//             //     return res.status(400).send({ status: false, message: "profileImage is required" })
-//             // }
-//         const salt = await bcrypt.genSalt(10);
-//         password = await bcrypt.hash(password, salt);
-//         const userRequest = {
-//             fullname,
-//             username,
-//             email,
-//             password,
-//             profileImage,
-//             gender,
-//             phoneNumber,
-//             address,
-//             story,
-//             followers,
-//             following
-//         };
-//         const userData = await userModel.create(userRequest);
-//         return res
-//             .status(201)
-//             .send({ message: "User signup successfully", data: userData });
-//     } catch (err) {
-//         return res.status(500).send(err.message);
-//     }
-// };
-
 exports.user_signup = async function (req, res) {
     try {
-        //if image path is given then run this code else run else code
         if (req.files && req.files.length > 0) {
             let {
                 fullname,
@@ -304,7 +231,6 @@ exports.logout = async (req, res) => {    //not working test again later
     }
 }
 
-// Forgot password api for sub admin verification by email otp
 exports.forgotPassword = async (req, res) => {
     try {
         const { email } = req.body;
@@ -335,7 +261,7 @@ exports.forgotPassword = async (req, res) => {
         return res.status(500).send(err.message);
     }
 };
-// Update password and encrypt it before saving it. if otp is correct and otp is not expired then only update password
+
 exports.updatePassword = async (req, res) => {
     try {
         const { email, otp, password } = req.body;
@@ -397,11 +323,7 @@ exports.userUpdate = async (req, res) => {
             // if (userData.isDeleted == true) {
             //     return res.status(400).send({ message: "user is not registered, register first" });
             // }
-            //not authorized to update other user data
-            // if (userData._id != userId) {
-            //     return res.status(400).send({ message: "not authorized to update other user data" });
-            // }
-
+           
             if (avatar && avatar.length > 0) {
                 avatar = await aws.uploadFile(avatar[0]);
             }
@@ -431,13 +353,11 @@ exports.userUpdate = async (req, res) => {
                 .send({ message: "user profile update successfully", data: updatedData });
         }
         else {
-            //const userId = req.body.userId;
             let {
                 fullname,
                 username,
                 email,
                 password,
-                //avatar,
                 gender,
                 phoneNumber,
                 address,
@@ -455,10 +375,6 @@ exports.userUpdate = async (req, res) => {
             }
             // if (userData.isDeleted == true) {
             //     return res.status(400).send({ message: "user is not registered, register first" });
-            // }
-            //user can update their own data only after applying jwt token in header
-            // if (userData._id != userId) {
-            //     return res.status(400).send({ message: "not authorized to update other user data" });
             // }
 
             const updatedData = await userModel.findOneAndUpdate(
@@ -511,7 +427,6 @@ exports.getUserById = async (req, res) => {
 
 exports.searchByUsername = async (req, res) => {
     try {
-        //const username = req.body.username;
         const userCount = await userModel.find({ username: { $regex: req.query.username } }).count();
         const user = await userModel.find({ username: { $regex: req.query.username } }).select("avatar username");
         if (user.length == 0) {
@@ -537,16 +452,10 @@ exports.getByUsername = async (req, res) => {
 
     exports.deleteUser = async (req, res) => {
         try {
-            //const userId = req.user.userId;
             const checkUser = await userModel.find({ _id: req.user.userId, isDeleted: false });
             // if (!checkUser) {
             //     return res.status(400).send({ message: "user not found, or unothorised" });
             // }
-            // delete the user only if the user given in body is same as the user in token
-            // if (checkUser._id != userId) {
-            //     return res.status(400).send({ message: "not authorized to delete other user data" });
-            // }
-
             if (checkUser) {
                 const user = await userModel.updateOne({ _id: req.user.userId, isDeleted: false }, { $set: { isDeleted: true, deletedAt: Date.now() } }, { new: true });
                 return res.status(200).send({ msg: "deleted successfully", data: user });
@@ -633,7 +542,6 @@ exports.suggestionsUser = async (req, res) => {
                     as: "followers",
                 },
             },
-            //isDeleted: false
             {
                 $lookup: {
                     from: "users",
@@ -664,7 +572,7 @@ exports.suggestionsUser = async (req, res) => {
     }
 }
 
-//_id: req.user.userId
+
 
 exports.getFollowers = async (req, res) => {
     try {
@@ -710,7 +618,6 @@ exports.blockUser = async (req, res) => {
     try {
         const userId = req.user.userId;
         const blockId = req.params.id;
-        // const user = await userModel.findById(userId);
         const user = await userModel.find({ _id: userId, block: blockId });
         if (user.length > 0)
             return res.status(500).json({ msg: "You already blocked this user." });
@@ -750,7 +657,8 @@ exports.unblockUser = async (req, res) => {
         return res.status(500).json({ msg: err.message });
     }
 }
-//yha se
+
+
 exports.getBlockedUsers = async (req, res) => {
     try {
         const userId = req.user.userId;
@@ -774,18 +682,7 @@ exports.getBlockedUsersCount = async (req, res) => {
 }
 
 
-// exports.getTimeline = async (req, res) => {
-//     try {
-//         const userId = req.body.id;
-//         const user = await userModel.findById(userId);
-//         const posts = await postModel.find({ userId: { $in: user.following } }).populate("userId", "-password").sort("-createdAt");
-//         return res.status(200).send({ message: "timeline posts", data: posts });
-//     } catch (err) {
-//         return res.status(500).json({ msg: err.message });
-//     }
-// }
 
-//send friend request to another user who is not in your friend list and keep the sent request in your sent request list
 exports.sendFriendRequest = async (req, res) => {
     try {
         const userId = req.user.userId;
@@ -809,7 +706,7 @@ exports.sendFriendRequest = async (req, res) => {
 }
 
 
-//accept friend request from another user who is in your friend request list and keep the friend in your friend list and remove the sent request from your sent request list
+
 exports.acceptFriendRequest = async (req, res) => {
     try {
         const userId = req.user.userId;
@@ -832,7 +729,7 @@ exports.acceptFriendRequest = async (req, res) => {
     }
 }
 
-//cancel friend request to another user who is in your sent request list and remove the sent request from your sent request list
+
 exports.cancelFriendRequest = async (req, res) => {
     try {
         const userId = req.user.userId;
@@ -844,9 +741,6 @@ exports.cancelFriendRequest = async (req, res) => {
         const friend = await userModel.find({ _id: userId, friends: receiverId });
         if (friend.length > 0)
             return res.status(500).json({ msg: "You are already friends." });
-        // const sentRequest = await userModel.find({ _id : userId, sentRequest: receiverId });
-        // if (sentRequest.length == 0)
-        //     return res.status(500).json({ msg: "You have not sent a friend request to this user." });
         const newFriendRequest = await userModel.findOneAndUpdate({ _id: userId }, { $pull: { friendRequest: receiverId } }, { new: true });
         //const newReceivedRequest = await userModel.findOneAndUpdate ( { _id: receiverId }, { $pull: { sentRequest : userId } }, { new: true } );  //this is dependable, so according to the situation, you can use it or not
         return res.status(200).send({ message: "friend request cancelled", data: newFriendRequest });
@@ -882,7 +776,6 @@ exports.getFriendRequests = async (req, res) => {
         const user = await userModel.findById(userId);
         if (!user) return res.status(400).send({ msg: "User does not exist." });
         const friendRequests = await userModel.findById(userId).populate('friendRequest');
-        //if no friend requests
         if (friendRequests.friendRequest.length == 0)
             return res.status(500).json({ msg: "You have no friend requests." });
         return res.status(200).send({ message: "friend requests", data: friendRequests.friendRequest });
@@ -931,31 +824,7 @@ exports.getFriendRequestsCount = async (req, res) => {
         return res.status(500).json({ msg: err.message });
     }
 }
-// not required
-//get all users
-// exports.getAllUsers = async (req, res) => {
-//     try {
-//         const userId = req.user.userId;
-//         const user = await userModel.findById(userId ).select("friends");
-//         const users = await userModel.find({ _id: { $nin: user.friends } }).select("-password");
-//         return res.status(200).send({ message: "all users", data: users });
-//     } catch (err) {
-//         return res.status(500).json({ msg: err.message });
-//     }
-// }
 
-// //get all users count
-// exports.getAllUsersCount = async (req, res) => {
-//     try {
-//         const userId = req.user.userId;
-//         const user = await userModel.findById(userId ).select("friends");
-//         const users = await userModel.find({ _id: { $nin: user.friends } }).select("-password");
-//         return res.status(200).send({ message: "all users count", count: users.length });
-//     } catch (err) {
-//         return res.status(500).json({ msg: err.message });
-//     }
-// }
-//yha tk not required uper dekho
 
 //reject friend request
 // exports.rejectFriendRequest = async (req, res) => {
@@ -977,7 +846,7 @@ exports.getFriendRequestsCount = async (req, res) => {
 //     }
 // }
 
-//if friend request is rejected then remove friend request from sender
+
 // exports.removeFriendRequest = async (req, res) => {
 //     try {
 //         const userId = req.user.userId;
@@ -999,7 +868,6 @@ exports.getSentFriendRequests = async (req, res) => {
         const userId = req.user.userId;
         const user = await userModel.findById(userId).select("sentRequest");
         const sentRequests = await userModel.find({ _id: { $in: user.sentRequest } }).select("-password");
-        //if no sent requests
         if (sentRequests.length == 0)
             return res.status(400).send({ msg: "No sent requests." });
         return res.status(200).send({ message: "sent friend requests", data: sentRequests });
@@ -1021,52 +889,60 @@ exports.getSentFriendRequestsCount = async (req, res) => {
 }
 
 //get mutual friends
-exports.getMutualFriends = async (req, res) => {
-    try {
-        const userId = req.user.userId;
-        const friendId = req.params.id;
-        const user = await userModel.findById(userId).select("friends");
-        const friend = await userModel.findById(friendId).select("friends");
-        const mutualFriends = await userModel.find({ _id: { $in: user.friends, $in: friend.friends } }).select("-password");
-        //if no mutual friends
-        if (mutualFriends.length == 0)
-            return res.status(400).send({ msg: "No mutual friends." });
-        return res.status(200).send({ message: "mutual friends", data: mutualFriends });
-    } catch (err) {
-        return res.status(500).json({ msg: err.message });
-    }
-}
 // exports.getMutualFriends = async (req, res) => {
 //     try {
 //         const userId = req.user.userId;
-//         const user = await userModel.findById(userId ).select("friends");
-//         const friends = await userModel.find({ _id: { $in: user.friends } }).select("friends");
-//         const mutualFriends = [];
-//         for (let i = 0; i < friends.length; i++) {
-//             for (let j = 0; j < friends[i].friends.length; j++) {
-//                 if (friends[i].friends[j] != userId) {
-//                     mutualFriends.push(friends[i].friends[j]);
-//                 }
-//             }
-//         }
-//         const mutualFriends2 = await userModel.find({ _id: { $in: mutualFriends } }).select("-password");
+//         const friendId = req.params.id;
+//         const user = await userModel.findById(userId).select("friends");
+//         const friend = await userModel.findById(friendId).select("friends");
+//         const mutualFriends = await userModel.find({ _id: { $in: user.friends, $in: friend.friends } }).select("-password");
 //         //if no mutual friends
-//         if (mutualFriends2.length == 0)
+//         if (mutualFriends.length == 0)
 //             return res.status(400).send({ msg: "No mutual friends." });
-//         return res.status(200).send({ message: "mutual friends", data: mutualFriends2 });
+//         return res.status(200).send({ message: "mutual friends", data: mutualFriends });
 //     } catch (err) {
 //         return res.status(500).json({ msg: err.message });
 //     }
 // }
+exports.getMutualFriends = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const user = await userModel.findById(userId ).select("friends");
+        const friends = await userModel.find({ _id: { $in: user.friends } }).select("friends");
+        const mutualFriends = [];
+        for (let i = 0; i < friends.length; i++) {
+            for (let j = 0; j < friends[i].friends.length; j++) {
+                if (friends[i].friends[j] != userId) {
+                    mutualFriends.push(friends[i].friends[j]);
+                }
+            }
+        }
+        const mutualFriends2 = await userModel.find({ _id: { $in: mutualFriends } }).select("-password");
+        if (mutualFriends2.length == 0)
+            return res.status(400).send({ msg: "No mutual friends." });
+        return res.status(200).send({ message: "mutual friends", data: mutualFriends2 });
+    } catch (err) {
+        return res.status(500).json({ msg: err.message });
+    }
+}
 //get mutual friends count
 exports.getMutualFriendsCount = async (req, res) => {
     try {
         const userId = req.user.userId;
-        const friendId = req.params.id;
-        const user = await userModel.findById(userId).select("friends");
-        const friend = await userModel.findById(friendId).select("friends");
-        const mutualFriends = await userModel.find({ _id: { $in: user.friends, $in: friend.friends } }).select("-password");
-        return res.status(200).send({ message: "mutual friends count", count: mutualFriends.length });
+        const user = await userModel.findById(userId ).select("friends");
+        const friends = await userModel.find({ _id: { $in: user.friends } }).select("friends");
+        const mutualFriends = [];
+        for (let i = 0; i < friends.length; i++) {
+            for (let j = 0; j < friends[i].friends.length; j++) {
+                if (friends[i].friends[j] != userId) {
+                    mutualFriends.push(friends[i].friends[j]);
+                }
+            }
+        }
+        const mutualFriends2 = await userModel.find({ _id: { $in: mutualFriends } }).select("-password");
+        if (mutualFriends2.length == 0)
+            return res.status(400).send({ msg: "No mutual friends." });
+        return res.status(200).send({ message: "mutual friends", data: mutualFriends2.length });
     } catch (err) {
         return res.status(500).json({ msg: err.message });
     }

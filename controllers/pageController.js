@@ -3,15 +3,10 @@ const userModel = require("../models/userModel");
 const pageModel = require("../models/pageModel");
 const postModel = require("../models/postModel");
 const commentModel = require("../models/commentModel");
-//const likeModel = require("../models/likeModel");
-//const shareModel = require("../models/shareModel");
-//const reportModel = require("../models/reportModel");
-//const mongoose = require("mongoose");
 const awsForSingle = require('../aws/aws');
 const awsForMulti = require('../awsBucket');
 
 
-//create a page and the user who is creating the page is the admin of that page
 exports.createPage = async (req, res) => {
     try {
         if (req.files && req.files.length > 0) {
@@ -71,7 +66,6 @@ exports.createPage = async (req, res) => {
                 privacy,
                 admin: id,
             });
-            //when page is created the the page id is added to the user db who is creating the page
             user.pages.push(page._id);
             await user.save();  
             return res.status(200).send({ settings: { success: "1", message: "Page created successfully" }, data: page });
@@ -84,7 +78,6 @@ exports.createPage = async (req, res) => {
 }
 
 
-//add user to page as member and the admin will added automatically when the page is created, give page id in params and user id(who is going to add) in body
 exports.addUserToPage = async (req, res) => {
     try {
         const id = req.user.userId;
@@ -114,7 +107,7 @@ exports.addUserToPage = async (req, res) => {
         return res.status(500).send({ settings: { success: "0", message: err.message } });
     }
 }
-// 
+
 
 //remove user from page
 exports.removeUserFromPage = async (req, res) => {
@@ -184,7 +177,6 @@ exports.getAllPages = async (req, res) => {
 }
 
 
-//update page by user admin and give page id in params and data in body, if any user update anything accept the coverImage, then the coverImage will be not affected
 exports.updatePage = async (req, res) => {
     try {
         const id = req.user.userId;
@@ -249,14 +241,10 @@ exports.deletePage = async (req, res) => {
     try {
         const id = req.user.userId;
         const page = await pageModel.findById(req.params.id);
-        //if page is already deleted
         if (page.isDeleted == true) {
             return res.status(400).send({ settings: { success: "0", message: "Page is already deleted" } });
         }
-        //when admin delete page all the members of that page will be removed and all posts of that page will be deleted and on page set isDeleted to true
         if (page.admin == id) {
-            // page.isDeleted = true, deletedAt = Date.now();
-            //set isDeleted to true and deletedAt to Date.now() with new: true
             const deletedPage = await pageModel.findByIdAndUpdate(req.params.id, { isDeleted: true, deletedAt: Date.now() }, { new: true });
             if (!deletedPage) {
                 return res.status(404).json({ message: "page not found" });
@@ -275,7 +263,7 @@ exports.deletePage = async (req, res) => {
 //get page by id
 // exports.getPageById = async (req, res) => {
 //     try {
-//         const { id } = req.params;
+//         const id = req.params;
 //         const page = await pageModel.findById(id);
 //         if (!page) {
 //             return res.status(404).send({ settings: { success: "0", message: "Page not found" } });
@@ -286,11 +274,10 @@ exports.deletePage = async (req, res) => {
 //     }
 // }
 
-//search page by category by any user using regex
+//search page by category
 exports.searchPageByCategory = async (req, res) => {
     try {
-        const { category } = req.params;
-        const page = await pageModel.find({ category: { $regex: category, $options: "i" } });
+        const page = await pageModel.find({ category: { $regex: req.query.category, $options: "i" } });
         if (!page) {
             return res.status(404).send({ settings: { success: "0", message: "Page not found" } });
         }
@@ -299,10 +286,10 @@ exports.searchPageByCategory = async (req, res) => {
         return res.status(500).send({ settings: { success: "0", message: err.message } });
     }
 }
-//search a page by name by any user
+//search a page by name
 exports.searchPageByName = async (req, res) => {
     try {
-        const page = await pageModel.find({ pageName: { $regex: req.params.name, $options: "i" } });
+        const page = await pageModel.find({ pageName: { $regex: req.query.name, $options: "i" } });
         if (!page) {
             return res.status(404).json({ message: "page not found" });
         }
@@ -334,7 +321,7 @@ exports.getAllUsersInPage = async (req, res) => {
     }
 }
 
-//get all posts in page by anyone, the page id is stored in all posts of that page
+
 exports.getAllPostsOfPage = async (req, res) => {
     try {
         const page = await pageModel.findById(req.params.id);
@@ -360,11 +347,9 @@ exports.joinPage = async (req, res) => {
         if (!page) {
             return res.status(404).json({ message: "page not found" });
         }
-        //if user is already in members array
         if (page.members.includes(id)) {
             return res.status(400).send({ settings: { success: "0", message: "You are already in this page" } });
         }
-        //admin can't join page
         if (page.admin == id) {
             return res.status(400).send({ settings: { success: "0", message: "You are admin of this page" } });
         }
@@ -384,7 +369,7 @@ exports.joinPage = async (req, res) => {
         return res.status(500).send({ settings: { success: "0", message: err.message } });
     }
 }
-//accept request to join page done by admin only and request will be removed from requests array and added to members array and admin will decide to whom he want to add by giving id of user in body
+
 exports.acceptRequestToJoinPage = async (req, res) => {
     try {
         const id = req.user.userId;
@@ -392,15 +377,12 @@ exports.acceptRequestToJoinPage = async (req, res) => {
         if (!page) {
             return res.status(404).json({ message: "page not found" });
         }
-        //if user is already in members array
         if (page.members.includes(req.body.userId)) {
             return res.status(400).send({ settings: { success: "0", message: "User is already in this page" } });
         }
-        //user can't accept request to join page
         if (page.admin != id) {
             return res.status(400).send({ settings: { success: "0", message: "You are not admin of this page" } });
         }
-        //if user is already in requests array
         if (!page.requests.includes(req.body.userId)) {
             return res.status(400).send({ settings: { success: "0", message: "User has not requested to join this page" } });
         }
@@ -413,7 +395,7 @@ exports.acceptRequestToJoinPage = async (req, res) => {
         return res.status(500).send({ settings: { success: "0", message: err.message } });
     }
 }
-//leave page by other users in members array
+//leave page by other users
 exports.leavePage = async (req, res) => {
     try {
         const id = req.user.userId;
@@ -421,13 +403,13 @@ exports.leavePage = async (req, res) => {
         if (!page) {
             return res.status(404).json({ message: "page not found" });
         }
-        //if user is not in members array
+
         if (!page.members.includes(id)) {
             return res.status(400).send({ settings: { success: "0", message: "You are not in this page" } });
         }
-        //admin can't leave page
+    
         if (page.admin == id) {
-            return res.status(400).send({ settings: { success: "0", message: "You are admin of this page" } });
+            return res.status(400).send({ settings: { success: "0", message: "You are admin of this page, you can't left" } });
         }
         page.members = page.members.filter((user) => user != id);
         await page.save();
@@ -438,7 +420,7 @@ exports.leavePage = async (req, res) => {
     }
 }
 
-//post in page by other users and admin
+
 exports.postInsidePage = async (req, res) => {
     try {
         const id = req.user.userId;
@@ -449,13 +431,12 @@ exports.postInsidePage = async (req, res) => {
         const { content } = req.body;
         let images = req.files;
 
-        //page id will be in params
         const pageId = req.params.id;
         const page = await pageModel.findById(req.params.id);
         if (!page) {
             return res.status(404).send({ settings: { success: "0", message: "Page not found" } });
         }
-        //if either content or images are not provided
+        
         if (!content && !images) {
             return res.status(400).send({ settings: { success: "0", message: "Content or images are required" } });
         }
@@ -466,20 +447,17 @@ exports.postInsidePage = async (req, res) => {
                 })
             );
         }
-        //only admin and members can post in page
         if (!page.members.includes(id) && page.admin != id) {
             return res.status(400).send({ settings: { success: "0", message: "You are not a member" } });
         }
-        // if (!page.members.includes(id)) {
-        //     return res.status(400).send({ settings: { success: "0", message: "You are not a member" } });
-        // }
+      
         const post = new postModel({
             content,
             images,
             user: id,
             page: pageId
         });
-        //when post is created it will be added to posts array of page
+
         page.posts.push(post._id);
         await page.save();
         await post.save();
@@ -489,7 +467,7 @@ exports.postInsidePage = async (req, res) => {
     }
 }
 
-//delete post form page by admin and user who created post, where page id will be in params and post id will be in body
+
 exports.deletePostFromPage = async (req, res) => {
     try {
         const id = req.user.userId;
@@ -508,7 +486,6 @@ exports.deletePostFromPage = async (req, res) => {
         if (post.user != id && page.admin != id) {
             return res.status(400).send({ settings: { success: "0", message: "You are not allowed to delete this post" } });
         }
-        //set isDeleted to true and deleted at to current time
         post.isDeleted = true;
         post.deletedAt = Date.now();
         await post.save();
@@ -518,7 +495,7 @@ exports.deletePostFromPage = async (req, res) => {
     }
 }
 
-//update post of page by user and give page id in params and data in body, if any user update anything accept the images, then the images will be not affected
+
 exports.updatePostOfPage = async (req, res) => {
     try {
         const id = req.user.userId;
@@ -573,7 +550,7 @@ exports.updatePostOfPage = async (req, res) => {
     }
 }
 
-//like post in page by other users and admin
+
 exports.likePostOfPage = async (req, res) => {
     try {
         const id = req.user.userId;
@@ -592,7 +569,7 @@ exports.likePostOfPage = async (req, res) => {
         if (!page) {
             return res.status(404).send({ settings: { success: "0", message: "Page not found" } });
         }
-        //any user can like post
+     
         if (post.likes.includes(id)) {
             return res.status(400).send({ settings: { success: "0", message: "You already liked this post" } });
         }
@@ -604,7 +581,7 @@ exports.likePostOfPage = async (req, res) => {
     }
 }
 
-//unlike post in page by other users and admin
+
 exports.unLikePostOfPage = async (req, res) => {
     try {
         const id = req.user.userId;
@@ -623,7 +600,7 @@ exports.unLikePostOfPage = async (req, res) => {
         if (!page) {
             return res.status(404).send({ settings: { success: "0", message: "Page not found" } });
         }
-        //any user can unlike post
+ 
         if (!post.likes.includes(id)) {
             return res.status(400).send({ settings: { success: "0", message: "You already unliked this post" } });
         }
@@ -635,7 +612,7 @@ exports.unLikePostOfPage = async (req, res) => {
     }
 }
 
-//like page by other users and admin
+
 exports.likePage = async (req, res) => {
     try {
         const id = req.user.userId;
@@ -647,7 +624,7 @@ exports.likePage = async (req, res) => {
         if (!page) {
             return res.status(404).send({ settings: { success: "0", message: "Page not found" } });
         }
-        //any user can like page
+    
         if (page.likes.includes(id)) {
             return res.status(400).send({ settings: { success: "0", message: "You already liked this page" } });
         }
@@ -659,7 +636,7 @@ exports.likePage = async (req, res) => {
     }
 }
 
-//unlike page by other users and admin
+
 exports.unLikePage = async (req, res) => {
     try {
         const id = req.user.userId;
@@ -671,7 +648,7 @@ exports.unLikePage = async (req, res) => {
         if (!page) {
             return res.status(404).send({ settings: { success: "0", message: "Page not found" } });
         }
-        //any user can unlike page
+
         if (!page.likes.includes(id)) {
             return res.status(400).send({ settings: { success: "0", message: "You already unliked this page" } });
         }
@@ -683,7 +660,7 @@ exports.unLikePage = async (req, res) => {
     }
 }
 
-//report page by other users 
+
 exports.reportPage = async (req, res) => {
     try {
         const id = req.user.userId;
@@ -695,7 +672,7 @@ exports.reportPage = async (req, res) => {
         if (!page) {
             return res.status(404).send({ settings: { success: "0", message: "Page not found" } });
         }
-        //any user can report page
+      
         if (page.report.includes(id)) {
             return res.status(400).send({ settings: { success: "0", message: "You already reported this page" } });
         }
@@ -708,7 +685,7 @@ exports.reportPage = async (req, res) => {
     }
 }
 
-//unreport page by other users
+
 exports.unReportPage = async (req, res) => {
     try {
         const id = req.user.userId;
@@ -720,7 +697,7 @@ exports.unReportPage = async (req, res) => {
         if (!page) {
             return res.status(404).send({ settings: { success: "0", message: "Page not found" } });
         }
-        //any user can unreport page
+      
         if (!page.report.includes(id)) {
             return res.status(400).send({ settings: { success: "0", message: "You already unreported this page" } });
         }
@@ -732,27 +709,3 @@ exports.unReportPage = async (req, res) => {
         return res.status(500).send({ settings: { success: "0", message: err.message } });
     }
 }
-
-//share page to other users
-// exports.sharePage = async (req, res) => {
-//     try {
-//         const id = req.user.userId;
-//         const user = await userModel.findById(id);
-//         if (!user) {
-//             return res.status(404).send({ settings: { success: "0", message: "User not found" } });
-//         }
-//         const page = await pageModel.findById(req.params.id);
-//         if (!page) {
-//             return res.status(404).send({ settings: { success: "0", message: "Page not found" } });
-//         }
-//         //any user can share page
-//         if (page.shares.includes(id)) {
-//             return res.status(400).send({ settings: { success: "0", message: "You already shared this page" } });
-//         }
-//         page.shares.push(id);
-//         await page.save();
-//         return res.status(200).send({ settings: { success: "1", message: "Page shared successfully" }, data: page });
-//     } catch (err) {
-//         return res.status(500).send({ settings: { success: "0", message: err.message } });
-//     }
-// }

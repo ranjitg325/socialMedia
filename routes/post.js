@@ -3,15 +3,15 @@ const router = express.Router();
 
 const postController = require("../controllers/postController");
 const middleware = require("../middleware/authenticateUser");
-//_id: req.user.userId
-router.post("/posts",middleware.authenticateToken,  postController.createPost); //modified not tested
 
-router.get("/getMyPosts", middleware.authenticateToken, postController.getPostsOfOwn);  //done by user only means my profile
+router.post("/posts",middleware.authenticateToken,  postController.createPost); 
+
+router.get("/getMyPosts", middleware.authenticateToken, postController.getPostsOfOwn);  
 
 router.put("/updatePost/:id", middleware.authenticateToken, postController.updatePost);
 
-router.get("/newsFeed",/*middleware.authenticateToken,*/  postController.getTimelinePost)
-router.get("/newsFeedWithNoFriends",/*middleware.authenticateToken,*/  postController.getTimelinePostWithoutFriends)
+router.get("/newsFeed",middleware.authenticateToken,  postController.getTimelinePost)
+router.get("/newsFeedWithNoFriends",middleware.authenticateToken,  postController.getTimelinePostWithoutFriends)
 
 router.delete("/deletePost/:id", middleware.authenticateToken, postController.deletePost);
 
@@ -41,7 +41,7 @@ router.delete("/deleteSharedPost/:id",middleware.authenticateToken, postControll
 router.put("/reportPost/:id", middleware.authenticateToken, postController.reportPost);
 
 router.put("/unReportPost/:id",middleware.authenticateToken,  postController.unReportPost);
-//serch post by # symbol
+//search post by # symbol
 router.get("/searchPostByHashTag", middleware.authenticateToken, postController.searchPostByHashTag);
 
 module.exports = router;

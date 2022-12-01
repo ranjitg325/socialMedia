@@ -2,24 +2,18 @@ const postModel = require('../models/postModel');
 const userModel = require('../models/userModel');
 const reelModel = require('../models/reelsModel')
 const adminModel = require('../models/adminModel');
-const commentModel = require('../models/commentModel');
-const notificationModel = require('../models/notificationModel');
-//const mongoose = require('mongoose');
 const aws = require('../aws/aws');
-//const fs = require('fs');
-// const { v4: uuidv4 } = require('uuid');
-// const { promisify } = require('util');
-// const unlinkAsync = promisify(fs.unlink);
-// const { validationResult } = require('express-validator');
+
+
 exports.createReel = async (req, res) => {
     try {
         const { caption } = req.body;
         let video = req.files;
         const user = await userModel.findOne({ _id: req.user.userId });
         if (!user) {
-            return res.status(400).json({  msg: 'User not found' });
+            return res.status(400).json({ msg: 'User not found' });
         }
-        //const reel = await aws.upload(video);
+      
         if (video && video.length > 0) {
             video = await aws.uploadFile(video[0]);
         }
@@ -32,10 +26,10 @@ exports.createReel = async (req, res) => {
             caption,
         });
         await newReel.save();
-        res.status(201).json({ message: 'Reel created successfully', data : newReel });
+        res.status(201).json({ message: 'Reel created successfully', data: newReel });
     } catch (err) {
         console.log(err);
-        res.status(500).json({msg: err.message });
+        res.status(500).json({ msg: err.message });
     }
 }
 
@@ -78,7 +72,7 @@ exports.deleteReel = async (req, res) => {
         if (reel.user.toString() !== req.user.userId) {
             return res.status(401).json({ msg: 'User not authorized' });
         }
-      const deletedReel = await reelModel.findOneAndUpdate({_id: req.params.id}, {isDeleted: true, deletedAt: Date.now()}, {new: true});
+        const deletedReel = await reelModel.findOneAndUpdate({ _id: req.params.id }, { isDeleted: true, deletedAt: Date.now() }, { new: true });
         res.status(201).json({ message: 'Reel deleted successfully', data: deletedReel });
     } catch (err) {
         console.log(err);
@@ -86,20 +80,7 @@ exports.deleteReel = async (req, res) => {
     }
 }
 
-// get all reels of my following users
-// exports.getFollowingReels = async (req, res) => {
-//     try {
-//         const user = await userModel.findOne({ _id: req.user.userId });
-//         if (!user) {
-//             return res.status(400).json({ msg: 'User not found' });
-//         }
-//         const reels = await reelModel.find({ user: { $in: user.following } }).populate('user', ['name', 'username', 'avatar']);
-//         res.status(200).json({ message: 'Following reels fetched successfully', data: reels });
-//     } catch (err) {
-//         console.log(err);
-//         res.status(500).json({ msg: err.message });
-//     }
-// }
+
 
 // get my all reels
 exports.getMyReels = async (req, res) => {
@@ -110,7 +91,7 @@ exports.getMyReels = async (req, res) => {
         }
         const reelsCount = await reelModel.find({ user: req.user.userId }).populate('user', ['name', 'username', 'avatar']).count();
         const reels = await reelModel.find({ user: req.user.userId }).populate('user', ['name', 'username', 'avatar']);
-        res.status(200).json({ message: 'My reels fetched successfully',"count" :reelsCount, data: reels });
+        res.status(200).json({ message: 'My reels fetched successfully', "count": reelsCount, data: reels });
     } catch (err) {
         console.log(err);
         res.status(500).json({ msg: err.message });
@@ -124,7 +105,7 @@ exports.getAllReels = async (req, res) => {
         if (!user) {
             return res.status(400).json({ msg: 'User not found' });
         }
-        const reels = await reelModel.find({isDeleted: false}).populate('user', ['name', 'username', 'avatar']);
+        const reels = await reelModel.find({ isDeleted: false }).populate('user', ['name', 'username', 'avatar']);
         res.status(200).json({ message: 'All reels fetched successfully', data: reels });
     } catch (err) {
         console.log(err);
@@ -139,7 +120,7 @@ exports.searchReels = async (req, res) => {
         if (!user) {
             return res.status(400).json({ msg: 'User not found' });
         }
-        const reels = await reelModel.find({ caption: { $regex: req.body.caption, $options: 'i' }, isDeleted : false }).populate('user', ['name', 'username', 'avatar']);
+        const reels = await reelModel.find({ caption: { $regex: req.query.caption, $options: 'i' }, isDeleted: false }).populate('user', ['name', 'username', 'avatar']);
         res.status(200).json({ message: 'Reels fetched successfully', data: reels });
     } catch (err) {
         console.log(err);
@@ -196,7 +177,7 @@ exports.saveReel = async (req, res) => {
     try {
         const user = await userModel.find({
             _id: req.user.userId,
-            saved: req.params.id         
+            saved: req.params.id
         });
         const checkUser = await userModel.findOne({ _id: req.user.userId });
         if (!checkUser) {
@@ -207,29 +188,29 @@ exports.saveReel = async (req, res) => {
             return res.status(400).json({ msg: 'Reel not found' });
         }
         if (user.length > 0)
-        return res.status(400).json({ msg: "You already saved this reel." });
+            return res.status(400).json({ msg: "You already saved this reel." });
 
         const save = await userModel.findOneAndUpdate(
             { _id: req.user.userId },
             {
-              $push: { saved: req.params.id },
+                $push: { saved: req.params.id },
             },
             { new: true }
-          );
-          if (!save)
-          return res.status(400).json({ msg: "This user does not exist." });
-          res.status(200).send({ msg: "Saved reel", data : save });
-        } catch (err) {
-          return res.status(500).json({ msg: err.message });
-        }
-      };
+        );
+        if (!save)
+            return res.status(400).json({ msg: "This user does not exist." });
+        res.status(200).send({ msg: "Saved reel", data: save });
+    } catch (err) {
+        return res.status(500).json({ msg: err.message });
+    }
+};
 
 // unsave a reel
 exports.unsaveReel = async (req, res) => {
     try {
         const user = await userModel.find({
             _id: req.user.userId,
-            saved: req.params.id         
+            saved: req.params.id
         });
         const checkUser = await userModel.findOne({ _id: req.user.userId });
         if (!checkUser) {
@@ -240,22 +221,22 @@ exports.unsaveReel = async (req, res) => {
             return res.status(400).json({ msg: 'Reel not found' });
         }
         if (user.length == 0)
-        return res.status(400).json({ msg: "You have not saved this reel." });
+            return res.status(400).json({ msg: "You have not saved this reel." });
 
         const save = await userModel.findOneAndUpdate(
             { _id: req.user.userId },
             {
-              $pull: { saved: req.params.id },
+                $pull: { saved: req.params.id },
             },
             { new: true }
-          );
-          if (!save)
-          return res.status(400).json({ msg: "This user does not exist." });
-          res.status(200).send({ msg: "Unsaved reel", data : save });
-        } catch (err) {
-          return res.status(500).json({ msg: err.message });
-        }
-      };
+        );
+        if (!save)
+            return res.status(400).json({ msg: "This user does not exist." });
+        res.status(200).send({ msg: "Unsaved reel", data: save });
+    } catch (err) {
+        return res.status(500).json({ msg: err.message });
+    }
+};
 
 // get saved reels
 exports.getSavedReels = async (req, res) => {
@@ -279,7 +260,7 @@ exports.getUserReels = async (req, res) => {
         if (!user) {
             return res.status(400).json({ msg: 'User not found' });
         }
-        const reels = await reelModel.find({ user: req.params.id, isDeleted : false }).populate('user', ['name', 'username', 'avatar']);
+        const reels = await reelModel.find({ user: req.params.id, isDeleted: false }).populate('user', ['name', 'username', 'avatar']);
         res.status(200).json({ message: 'User reels fetched successfully', data: reels });
     } catch (err) {
         console.log(err);
@@ -294,17 +275,17 @@ exports.reportReel = async (req, res) => {
         if (!user) {
             return res.status(400).json({ msg: 'User not found' });
         }
-        const reel = await reelModel.findOne({_id:req.params.id});
+        const reel = await reelModel.findOne({ _id: req.params.id });
         if (!reel) {
             return res.status(400).json({ msg: 'Reel not found' });
         }
-        //const updateReel= await reelModel.findByIdAndUpdate({ $push: { report: req.body.userId }, $set: { isReported: true } }, { new: true });
+      
         const updateReel = await reelModel.findOneAndUpdate(
             { _id: req.params.id },
-            { $push: { report: req.user.userId }, $set : {isReported : true} },
+            { $push: { report: req.user.userId }, $set: { isReported: true } },
             { new: true }
-          );
-        res.status(200).json({ message: 'Reel reported successfully', data :updateReel });
+        );
+        res.status(200).json({ message: 'Reel reported successfully', data: updateReel });
     } catch (err) {
         console.log(err);
         res.status(500).json({ msg: err.message });
@@ -318,7 +299,7 @@ exports.getReportedReels = async (req, res) => {
         if (!user) {
             return res.status(400).json({ msg: 'User not found' });
         }
-        const reels = await reelModel.find({ isReported: true, isDeleted : false }).populate('user', ['name', 'username', 'avatar']);
+        const reels = await reelModel.find({ isReported: true, isDeleted: false }).populate('user', ['name', 'username', 'avatar']);
         res.status(200).json({ message: 'Reported reels fetched successfully', data: reels });
     } catch (err) {
         console.log(err);
@@ -326,26 +307,31 @@ exports.getReportedReels = async (req, res) => {
     }
 }
 
-
-// share a reel
+//share reel to timeline
 exports.shareReel = async (req, res) => {
     try {
         const user = await userModel.findOne({ _id: req.user.userId });
         if (!user) {
             return res.status(400).json({ msg: 'User not found' });
         }
-        const reel = await reelModel.findById(req.params.id);
+        const reel = await reelModel.findOne({ _id: req.params.id });
         if (!reel) {
             return res.status(400).json({ msg: 'Reel not found' });
         }
         const updateReel = await reelModel.findOneAndUpdate(
             { _id: req.params.id },
-           
-            { $inc: { sharesCount: 1 } },
-            //{ $push: { shares: req.body.userId } },
+            {
+            $push: { shares: req.user.userId },
+            $inc: { sharesCount: 1 }
+            },
             { new: true }
-          );
-        res.status(200).json({ message: 'Reel shared successfully', data :updateReel });
+        );
+        const updateShared = await userModel.findOneAndUpdate(
+            { _id: req.user.userId },
+            { $push: { shared: req.params.id } },
+            { new: true }
+        );
+        res.status(200).json({ message: 'Reel shared successfully', data: updateReel });
     } catch (err) {
         console.log(err);
         res.status(500).json({ msg: err.message });
