@@ -24,18 +24,18 @@ const userSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
-        mail_otp:{         //when a user login after registration, he will be asked to verify his email address
-            type:String,
-            unique:true,
-          },
-        otp:{              //when user forgot his password, he will be asked to verify his email address using otp
-            type:String,
-            unique:true,
+        mail_otp: {         //when a user login after registration, he will be asked to verify his email address
+            type: String,
+            unique: true,
         },
-        avatar : {
-            type : String,
+        otp: {              //when user forgot his password, he will be asked to verify his email address using otp
+            type: String,
+            unique: true,
+        },
+        avatar: {
+            type: String,
             //required : true,
-            default : "https://res.cloudinary.com/dxqjyqz8f/image/upload/v1622021027/avatars/default_avatar.png"
+            default: "https://res.cloudinary.com/dxqjyqz8f/image/upload/v1622021027/avatars/default_avatar.png"
             //s3 link
         },
         //role: { type: String, default: "user" },
@@ -55,25 +55,19 @@ const userSchema = new mongoose.Schema(
         followers: [{ type: mongoose.Types.ObjectId, ref: "user" }],
         following: [{ type: mongoose.Types.ObjectId, ref: "user" }],
         saved: [{ type: mongoose.Types.ObjectId, ref: "user" }],
-        shared : [{ type: mongoose.Types.ObjectId, ref: "post" }],
+        shared: [{ type: mongoose.Types.ObjectId, ref: "post" }],
         //block user
-        block : [{ type: mongoose.Types.ObjectId, ref: "user" }],
-       
-        // pendingFriendRequest: [{ type: mongoose.Types.ObjectId, ref: "user" }],
-        // acceptedFriendRequest: [{ type: mongoose.Types.ObjectId, ref: "user" }],
-        
-        //send friend request
-        friendRequest : [{ type: mongoose.Types.ObjectId, ref: "user" }],
-        //accept friend request
-         friends : [{ type: mongoose.Types.ObjectId, ref: "user" }],
-         //sent friend request record
-            sentRequest : [{ type: mongoose.Types.ObjectId, ref: "user" }],
-        // //cancel friend request
-        // cancelRequest : [{ type: mongoose.Types.ObjectId, ref: "user" }],
-        //   //unfriend
-        // unfriend : [{ type: mongoose.Types.ObjectId, ref: "user" }],
-        //newly added pages in schema, again create and recheck
+        block: [{ type: mongoose.Types.ObjectId, ref: "user" }],
+
+        friendRequest: [{ type: mongoose.Types.ObjectId, ref: "user" }],
+
+        friends: [{ type: mongoose.Types.ObjectId, ref: "user" }],
+
+        sentRequest: [{ type: mongoose.Types.ObjectId, ref: "user" }],
+
         pages: [{ type: mongoose.Types.ObjectId, ref: "page" }],
+        //if user organise an event
+        events: [{ type: mongoose.Types.ObjectId, ref: "event" }],
         isDeleted: {
             type: Boolean,
             default: false,

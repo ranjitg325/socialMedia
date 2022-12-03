@@ -1,4 +1,4 @@
-//create story for 24 hours only
+//story for 24 hours only
 const postModel = require('../models/postModel');
 const userModel = require('../models/userModel');
 const storyModel = require('../models/reelsStoryModel');

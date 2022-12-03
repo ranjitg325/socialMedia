@@ -23,6 +23,7 @@ const reelsStory = require('./routes/reelsStory.js');
 const news = require('./routes/news.js');
 const page = require('./routes/page.js');
 const sharePage = require('./routes/sharePage.js');
+const organiseEvent = require('./routes/organiseEvent.js');
 
 require('dotenv').config();
 // //const multer = require("multer")
@@ -68,6 +69,7 @@ app.use('/reelsStory', reelsStory);
 app.use('/news', news);
 app.use('/page', page);
 app.use('/sharePage', sharePage);
+app.use('/organiseEvent', organiseEvent);
 
 
 app.listen(process.env.PORT || 3000, function () {

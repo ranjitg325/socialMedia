@@ -1,4 +1,3 @@
-//create a page like facebook page where a lots of user can post their post in that specific page  and other user can see that post and can like and comment on that post when they follow that page
 const userModel = require("../models/userModel");
 const pageModel = require("../models/pageModel");
 const postModel = require("../models/postModel");
