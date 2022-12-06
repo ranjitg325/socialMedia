@@ -1,4 +1,3 @@
-//organise events online where nearby people can find and join them
 
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
@@ -64,6 +63,21 @@ var eventSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'User'
     }],
+    hashtag: {
+        type: String,
+        trim: true,
+        minlength: 2,
+        maxlength: 30,
+    },
+    mention: [{
+        type: mongoose.Types.ObjectId,
+        ref: "user",
+    }],
+    likes: [{ type: mongoose.Types.ObjectId, ref: "user" }],
+    comments: [{ type: mongoose.Types.ObjectId, ref: "EventComment" }],
+    shares: [{ type: mongoose.Types.ObjectId, ref: "user" }],
+    sharesCount: { type: Number, default: 0 },
+
     report: [{ type: mongoose.Types.ObjectId, ref: "user" }],
     isReported: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },

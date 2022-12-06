@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const postModel = require("../models/postModel");
 const userModel = require("../models/userModel");
-
+const organiseEventModel = require("../models/organiseEventModel");
 
 exports.admin_signup = async (req, res) => {
     try {
@@ -112,6 +112,26 @@ exports.getReportedPosts = async (req, res) => {
     try {
         const reportedPosts = await postModel.find({ isReported: true });
         return res.status(200).send({ setting: { success: "1", message: "reported posts", data: reportedPosts } });
+    } catch (err) {
+        return res.status(500).send(err.message);
+    };
+}
+
+//get reported events by admin only
+exports.getReportedEvents = async (req, res) => {
+    try {
+        const reportedEvents = await organiseEventModel.find({ isReported: true });
+        return res.status(200).send({ setting: { success: "1", message: "reported events", data: reportedEvents } });
+    } catch (err) {
+        return res.status(500).send(err.message);
+    };
+}
+
+//get reported events count
+exports.getReportedEventsCount = async (req, res) => {  
+    try {
+        const reportedEventsCount = await organiseEventModel.find({ isReported: true }).count();
+        return res.status(200).send({ setting: { success: "1", message: "reported events count", data: reportedEventsCount } });
     } catch (err) {
         return res.status(500).send(err.message);
     };
