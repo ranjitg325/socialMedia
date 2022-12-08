@@ -1,5 +1,6 @@
 const userModel = require("../models/userModel.js")
 const postModel = require("../models/postModel.js");
+const questionModel = require("../models/questionModel.js");
 const emailValidator = require("validator")
 const transporter = require("../utils/sendMail");
 const otpGenerator = require("otp-generator");
@@ -964,5 +965,3 @@ exports.pullFriendRequest = async (req, res) => {
         return res.status(500).json({ msg: err.message });
     }
 }
-
-

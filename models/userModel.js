@@ -68,6 +68,13 @@ const userSchema = new mongoose.Schema(
         pages: [{ type: mongoose.Types.ObjectId, ref: "page" }],
         //if user organise an event
         events: [{ type: mongoose.Types.ObjectId, ref: "event" }],
+       //if user verified then a blue tick will be shown, for varification user will be asked some questions, if he answers correctly then he will be verified automatically
+      questions: [{ type: mongoose.Types.ObjectId, ref: "question" }],
+        isVerified: {
+            type: Boolean,
+            default: false,
+        },
+        
         isDeleted: {
             type: Boolean,
             default: false,

@@ -51,6 +51,14 @@ const adminSchema = new mongoose.Schema(
         trim: true,
       },
     },
+    mail_otp: {         //when an admin login after registration, he will be asked to verify his email address
+      type: String,
+      unique: true,
+    },
+    otp: {              //when admin forgot his password, he will be asked to verify his email address using otp
+      type: String,
+      unique: true,
+    },
     isDeleted: {
       type: Boolean,
       default: false,

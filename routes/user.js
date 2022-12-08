@@ -50,4 +50,5 @@ router.get('/getMutualFriendsCount/:id', middleware.authenticateToken, userContr
 //pull sent friend request
 router.patch('/pullFriendRequest/:id', middleware.authenticateToken, userController.pullFriendRequest); 
 
+
 module.exports = router;
