@@ -91,6 +91,11 @@ const pageSchema = new mongoose.Schema(
         comments: [{ type: mongoose.Types.ObjectId, ref: "comment" }],
         shares: [{ type: mongoose.Types.ObjectId, ref: "user" }],
         sharesCount: { type: Number, default: 0 },
+        questions: [{ type: mongoose.Types.ObjectId, ref: "questionForPage" }],
+        isVerified: {
+            type: Boolean,
+            default: false,
+        },
         report: [{ type: mongoose.Types.ObjectId, ref: "user" }],
         isReported: { type: Boolean, default: false },
         isDeleted: { type: Boolean, default: false },

@@ -2,7 +2,9 @@ const adminModel = require("../models/adminModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const postModel = require("../models/postModel");
+const commentModel = require("../models/commentModel")
 const userModel = require("../models/userModel");
+const pageModel = require("../models/pageModel");
 const organiseEventModel = require("../models/organiseEventModel");
 
 exports.admin_signup = async (req, res) => {
@@ -274,7 +276,7 @@ exports.deleteAdmin = async (req, res) => {
 
 exports.getReportedPosts = async (req, res) => {
     try {
-        const reportedPosts = await postModel.find({ isReported: true });
+        const reportedPosts = await postModel.find({ isReported: true , isDeleted: false});
         return res.status(200).send({ setting: { success: "1", message: "reported posts", data: reportedPosts } });
     } catch (err) {
         return res.status(500).send(err.message);
@@ -284,7 +286,7 @@ exports.getReportedPosts = async (req, res) => {
 //get reported events by admin only
 exports.getReportedEvents = async (req, res) => {
     try {
-        const reportedEvents = await organiseEventModel.find({ isReported: true });
+        const reportedEvents = await organiseEventModel.find({ isReported: true, isDeleted: false });
         return res.status(200).send({ setting: { success: "1", message: "reported events", data: reportedEvents } });
     } catch (err) {
         return res.status(500).send(err.message);
@@ -294,9 +296,120 @@ exports.getReportedEvents = async (req, res) => {
 //get reported events count
 exports.getReportedEventsCount = async (req, res) => {
     try {
-        const reportedEventsCount = await organiseEventModel.find({ isReported: true }).count();
+        const reportedEventsCount = await organiseEventModel.find({ isReported: true, isDeleted: false }).count();
         return res.status(200).send({ setting: { success: "1", message: "reported events count", data: reportedEventsCount } });
     } catch (err) {
         return res.status(500).send(err.message);
     };
+}
+
+//reported posts can be deleted by admin only
+exports.deleteReportedPost = async (req, res) => {
+    try {
+        const postId = req.params.id;
+        const adminId = req.user.userId;
+        const checkPost = await postModel.findById({ _id: postId });
+        if(!checkPost){
+            return res.status(400).send({ message: "post not found" });
+        }
+        const checkAdmin = await adminModel.findById({ _id: adminId });
+        if (checkAdmin) {
+            const post = await postModel.updateOne({ _id: postId, isReported: true }, { $set: { isDeleted: true, deletedAt: Date.now() } }, { new: true });
+            res.status(200).send({ msg: "post deleted successfully", data: post });
+        } else {
+            res.status(400).send({ error: 'admin not found' });
+        }
+    } catch (err) {
+        return res.status(500).send(err.message);
+    }
+}
+
+//only admin can delete reported events
+exports.deleteReportedEvent = async (req, res) => {
+    try {
+        const eventId = req.params.id;
+        const adminId = req.user.userId;
+        const checkEvent = await organiseEventModel.findById({ _id: eventId });
+        const checkAdmin = await adminModel.findById({ _id: adminId });
+        if (checkEvent && checkAdmin) {
+            const event = await organiseEventModel.updateOne({ _id: eventId, isReported: true }, { $set: { isDeleted: true, deletedAt: Date.now() } }, { new: true });
+            res.status(200).send({ msg: "event deleted successfully", data: event });
+        } else {
+            res.status(400).send({ error: 'event not found or you are not admin' });
+        }
+    } catch (err) {
+        return res.status(500).send(err.message);
+    }
+}
+
+//admin can delete any post
+exports.deletePost = async (req, res) => {
+    try {
+        const postId = req.params.id;
+        const adminId = req.user.userId;
+        const checkPost = await postModel.findById({ _id: postId });
+        const checkAdmin = await adminModel.findById({ _id: adminId, isDeleted: false });
+        if (checkPost && checkAdmin) {
+              const post = await postModel.updateOne({ _id: postId }, { $set: { isDeleted: true, deletedAt: Date.now() } }, { new: true });
+            res.status(200).send({ msg: "post deleted successfully", data: post });
+        } else {
+            res.status(400).send({ error: 'post not found or you are not admin' });
+        }
+    } catch (err) {
+        return res.status(500).send(err.message);
+    }
+}
+
+//admin can delete any event
+exports.deleteEvent = async (req, res) => {
+    try {
+        const eventId = req.params.id;
+        const adminId = req.user.userId;
+        const checkEvent = await organiseEventModel.findById({ _id: eventId });
+        const checkAdmin = await adminModel.findById({ _id: adminId, isDeleted: false });
+        if (checkEvent && checkAdmin) {
+            const event = await organiseEventModel.updateOne({ _id: eventId }, { $set: { isDeleted: true, deletedAt: Date.now() } }, { new: true });
+            res.status(200).send({ msg: "event deleted successfully", data: event });
+        } else {
+            res.status(400).send({ error: 'event not found or you are not the admin' });
+        }
+    } catch (err) {
+        return res.status(500).send(err.message);
+    }
+}
+
+//admin can delete any user
+exports.deleteUser = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const adminId = req.user.userId;
+        const checkUser = await userModel.findById({ _id: userId });
+        const checkAdmin = await adminModel.findById({ _id: adminId, isDeleted: false });
+        if (checkUser && checkAdmin) {
+            const user = await userModel.updateOne({ _id: userId }, { $set: { isDeleted: true, deletedAt: Date.now() } }, { new: true });
+            res.status(200).send({ msg: "user deleted successfully", data: user });
+        } else {
+            res.status(400).send({ error: 'user not found or you are not admin' });
+        }
+    } catch (err) {
+        return res.status(500).send(err.message);
+    }
+}
+
+//admin can delete any page
+exports.deletePage = async (req, res) => {
+    try {
+        const pageId = req.params.id;
+        const adminId = req.user.userId;
+        const checkPage = await pageModel.findById({ _id: pageId });
+        const checkAdmin = await adminModel.findById({ _id: adminId, isDeleted: false });
+        if (checkPage && checkAdmin) {
+            const page = await pageModel.updateOne({ _id: pageId }, { $set: { isDeleted: true, deletedAt: Date.now() } }, { new: true });
+            res.status(200).send({ msg: "page deleted successfully", data: page });
+        } else {
+            res.status(400).send({ error: 'page not found or you are not admin' });
+        }
+    } catch (err) {
+        return res.status(500).send(err.message);
+    }
 }
